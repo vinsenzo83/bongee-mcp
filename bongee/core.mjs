@@ -9,7 +9,7 @@ import {processIdentity,waitForSupervisor} from './session-supervisor.mjs';
 import {validateLabels,phaseFor} from './monitor-state.mjs';
 
 export function safeEnv(source=process.env){
- const keys=['HOME','PATH','TMPDIR','USER','LANG','LC_ALL','SHELL','CODEX_HOME','XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME'];
+ const keys=['HOME','PATH','TMPDIR','USER','LANG','LC_ALL','SHELL','CODEX_HOME','XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME','BONGEE_SESSION_STATE_DIR'];
  return Object.fromEntries(keys.filter(k=>typeof source[k]==='string').map(k=>[k,source[k]]));
 }
 export function ownerIsAlive(pid){if(!Number.isInteger(pid)||pid<=0)return false;try{process.kill(pid,0);return true;}catch(error){return error.code==='EPERM';}}
@@ -29,7 +29,7 @@ export function eventParser(provider,job,maxResult=65536){
  return {push(chunk){for(const fragment of chunk.toString().split(/(?<=\n)/)){const newline=fragment.endsWith('\n');if(!discarding){pending+=fragment;if(pending.length>1024*1024){pending='';discarding=true;}}if(newline){if(!discarding)event(pending);pending='';discarding=false;}}},finish(){if(pending&&!discarding)event(pending);return completed&&!failed;}};
 }
 export class AgentManager {
- constructor({stateDir=join(homedir(),'.session-agents-mcp'),runner=spawn,authCheck,kill=(child)=>{const signal=value=>{try{process.kill(-child.pid,value);}catch{try{child.kill(value);}catch{}}};signal('SIGTERM');const escalation=setTimeout(()=>signal('SIGKILL'),1000);child.once('close',()=>{clearTimeout(escalation);signal('SIGKILL');});escalation.unref();},maxConcurrent=2,maxOutput=65536}={}){
+ constructor({stateDir=process.env.BONGEE_SESSION_STATE_DIR||join(homedir(),'.session-agents-mcp'),runner=spawn,authCheck,kill=(child)=>{const signal=value=>{try{process.kill(-child.pid,value);}catch{try{child.kill(value);}catch{}}};signal('SIGTERM');const escalation=setTimeout(()=>signal('SIGKILL'),1000);child.once('close',()=>{clearTimeout(escalation);signal('SIGKILL');});escalation.unref();},maxConcurrent=2,maxOutput=65536}={}){
   Object.assign(this,{stateDir,runner,kill,maxConcurrent,maxOutput});this.jobs=new Map();this.running=new Map();this.owned=new Set();this.authCheck=authCheck||((p)=>this.checkAuth(p));
   this.persistQueues=new Map();this.ready=this.restore();this.startQueue=Promise.resolve();
  }

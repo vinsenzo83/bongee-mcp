@@ -5,7 +5,7 @@ import {randomUUID,createHash} from 'node:crypto';
 function ownerIsAlive(pid){if(!Number.isInteger(pid)||pid<=0)return false;try{process.kill(pid,0);return true;}catch(e){return e.code==='EPERM';}}
 
 export const PHASES=[['planning','기획'],['design','설계·디자인'],['development','개발'],['verification','검증']];
-export const STATE_DIR=join(homedir(),'.session-agents-mcp');
+export const STATE_DIR=process.env.BONGEE_SESSION_STATE_DIR||join(homedir(),'.session-agents-mcp');
 export function clean(value,max=80){return String(value??'').replace(/[\x00-\x1f\x7f-\x9f]/g,' ').slice(0,max);}
 export function phaseFor(role){const r=String(role||'').toLowerCase();if(/planner|researcher|기획|조사/.test(r))return 'planning';if(/architect|designer|설계|디자이너|디자인/.test(r))return 'design';if(/tester|reviewer|auditor|security|검증|테스터|리뷰|보안/.test(r))return 'verification';if(/coder|developer|engineer|implementer|개발/.test(r))return 'development';return 'unassigned';}
 export function validateLabels({role,name,phase}={}){for(const [key,v]of Object.entries({role,name})){if(v!==undefined&&(typeof v!=='string'||!v.trim()||v.length>80||/[\x00-\x1f\x7f-\x9f]/.test(v)))throw Error('Invalid '+key+' label');}if(phase!==undefined&&!PHASES.some(([id])=>id===phase))throw Error('Invalid phase');return {...(role?{role}:{}),...(name?{name}:{}),...(phase?{phase}:{})};}
