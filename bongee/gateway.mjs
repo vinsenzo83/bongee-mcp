@@ -46,7 +46,7 @@ export function createGateway({token=process.env.BONGEE_GATEWAY_TOKEN,clock=Date
  const call=async(name,args={},tenantId='owner')=>{
   const tenant=store.get(tenantId),{jobs,runner}=tenant;const get=id=>store.getJob(tenantId,id);const trim=()=>store.trim(tenantId);
 
-  if(runner.catalog.some(t=>t.name===name)||publicCatalog.some(t=>t.name===name)){
+  if(runner.catalog.some(t=>t.name===name)||(publicCatalog.some(t=>t.name===name)&&!tools.some(t=>t.name===name))){
    if(!connected(tenant))throw Error('Local runner is disconnected. Connect your own executor at '+publicUrl+'/setup');if(JSON.stringify(args).length>100000)throw Error('Tool arguments exceed size limit');if([...jobs.values()].filter(j=>['queued','running'].includes(j.status)).length>=20)throw Error('Agent queue is full');
    const job={id:randomUUID(),kind:'rpc',tool:name,status:'queued',startedAt:new Date(clock()).toISOString(),input:{name,arguments:args}};store.addJob(tenantId,job);trim();
    const deadline=Date.now()+55000;while(['queued','running'].includes(job.status)&&Date.now()<deadline)await new Promise(r=>setTimeout(r,100));
