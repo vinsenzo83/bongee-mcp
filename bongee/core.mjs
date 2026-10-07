@@ -70,7 +70,7 @@ export class AgentManager {
   const append=value=>{parser.push(value);const space=this.maxOutput-job.output.length;if(value.length>space)job.truncated=true;job.output+=value.slice(0,Math.max(0,space));};child.stdout?.on('data',data=>append(decoder.write(data)));
   // Provider diagnostics may echo prompts or credentials, so stderr is discarded.
   child.stderr?.on('data',()=>{});child.stdin?.on('error',()=>{});
-  child.on('error',()=>{if(!handle.requested)handle.requested={status:'failed',reason:'Unable to start provider'};});child.on('close',code=>{append(decoder.end());const success=parser.finish()&&code===0;const requested=handle.requested;void finish(requested?.status||(success?'completed':'failed'),requested?.reason||(success?undefined:'Provider did not report successful completion'),code);});
+  child.on('error',()=>{if(!handle.requested)handle.requested={status:'failed',reason:'Unable to start provider'};});child.on('close',code=>{if(this.runner===spawn&&Number.isInteger(child.pid)){try{process.kill(-child.pid,'SIGKILL');}catch{}}append(decoder.end());const success=parser.finish()&&code===0;const requested=handle.requested;void finish(requested?.status||(success?'completed':'failed'),requested?.reason||(success?undefined:'Provider did not report successful completion'),code);});
   handle.timer=setTimeout(()=>{void handle.stop('timed-out','Execution time limit reached');},timeoutSeconds*1000);
   child.stdin?.end(role?'작업 역할: '+role+'\n\n'+prompt:prompt);if(job.supervisorPid){try{await this.persist(job);}catch{job.persistenceError=true;await handle.stop('failed','Unable to persist supervisor state');}}return this.status(job.id);
  }
