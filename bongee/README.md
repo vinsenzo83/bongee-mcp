@@ -23,6 +23,8 @@ claude mcp add --scope user bongee -- node /absolute/path/bongee-mcp/bongee/prox
 
 ## 기능
 
+상세 실행 순서와 입력 예시는 [사용 설명서](docs/USAGE.md)를 보세요. 아래 목록은 기능 요약이며 원본 358개 도구 각각의 상세 매뉴얼은 아닙니다.
+
 - Ruflo 원본 도구358개와 전체 원본 코드 보존. 등록은 모든 도구가 설정·검증 완료됐다는 뜻이 아닙니다.
 - `bongee_agent_start/status/result/cancel/list`, `bongee_provider_status`: Codex·Claude 세션 실행·조회. 기본 읽기 전용, 실행 프로세스당 동시2개, 제한시간 기본180초.
 - 기존 `agent_execute` 공통 모델 호출 경로에도 로그인 세션 공급자 추가. 기본 Codex, `BONGEE_SESSION_PROVIDER=claude`로 선택. 원본 외부 API 경로는 소스에 보존.
