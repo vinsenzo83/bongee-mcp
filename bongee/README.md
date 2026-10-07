@@ -24,7 +24,7 @@ claude mcp add --scope user bongee -- node /absolute/path/bongee-mcp/bongee/prox
 ## 기능
 
 - Ruflo 원본 도구358개와 전체 원본 코드 보존. 등록은 모든 도구가 설정·검증 완료됐다는 뜻이 아닙니다.
-- `bongee_agent_start/status/result/cancel/list`, `bongee_provider_status`: Codex·Claude 세션 실행·조회. 기본 읽기 전용, 동시2개, 제한시간 기본180초.
+- `bongee_agent_start/status/result/cancel/list`, `bongee_provider_status`: Codex·Claude 세션 실행·조회. 기본 읽기 전용, 실행 프로세스당 동시2개, 제한시간 기본180초.
 - 기존 `agent_execute` 공통 모델 호출 경로에도 로그인 세션 공급자 추가. 기본 Codex, `BONGEE_SESSION_PROVIDER=claude`로 선택. 원본 외부 API 경로는 소스에 보존.
 - `bongee_baton_status` 및 BATON의 실제 도구45개: 암호화 인계·수신·차이·검증·팀 방. 원격 연결 성공 시 노출됩니다. 원격은 일반 네트워크 연결이 필요하고, 일부 계정 관리 기능은 BATON 계정 권한이 필요합니다.
 - 원본 모델 가격으로 세션 구독 비용을 임의 계산하지 않습니다. 현재 세션과 전체 대화를 자동 공유하지 않으므로 작업 맥락을 prompt에 넣어야 합니다.

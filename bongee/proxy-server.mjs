@@ -10,7 +10,7 @@ import {createBatonAdapter} from './baton-adapter.mjs';
 const manager=new AgentManager();await manager.ready;
 const runtime=join(dirname(fileURLToPath(import.meta.resolve('@claude-flow/cli'))),'../..');
 const upstream=new Client({name:'bongee-upstream',version:'0.1.0'});
-const child=new StdioClientTransport({command:process.execPath,args:[join(runtime,'bin/cli.js'),'mcp','start'],env:{...process.env,RUFLO_SESSION_PROVIDER:process.env.BONGEE_SESSION_PROVIDER||'codex'},stderr:'inherit'});
+const child=new StdioClientTransport({command:process.execPath,args:[join(runtime,'bin/cli.js'),'mcp','start'],env:{...process.env,RUFLO_SESSION_PROVIDER:process.env.BONGEE_SESSION_PROVIDER||'codex',RUFLO_SESSION_TIMEOUT_MS:'300000'},stderr:'inherit'});
 await upstream.connect(child);
 const upstreamCatalog=(await upstream.listTools()).tools;
 const baton=await createBatonAdapter({reservedNames:upstreamCatalog.map(t=>t.name)});
@@ -29,7 +29,7 @@ server.setRequestHandler(ListToolsRequestSchema,async()=>{let tools=[],cursor;do
 server.setRequestHandler(CallToolRequestSchema,async request=>{const {name,arguments:a={}}=request.params;
  if(baton.tools().some(t=>t.name===name))return baton.call(name,a);
  if(!extras.some(t=>t.name===name))return upstream.callTool(request.params,undefined,{timeout:660000});
- try{let result;switch(name){case 'bongee_baton_status':result=await baton.status();break;case 'bongee_provider_status':result=await manager.providerStatus();break;case 'bongee_agent_start':result=await manager.start(a);break;case 'bongee_agent_status':result=manager.status(a.id);break;case 'bongee_agent_result':result=manager.result(a.id);break;case 'bongee_agent_cancel':result=await manager.cancel(a.id);break;case 'bongee_agent_list':result=await manager.list();}return {content:[{type:'text',text:JSON.stringify(result)}]};}catch(e){return {isError:true,content:[{type:'text',text:e.message}]};}
+ try{let result;switch(name){case 'bongee_baton_status':result=await baton.status();break;case 'bongee_provider_status':result=await manager.providerStatus();break;case 'bongee_agent_start':result=await manager.start(a);break;case 'bongee_agent_status':result=await manager.readStatus(a.id);break;case 'bongee_agent_result':result=await manager.readResult(a.id);break;case 'bongee_agent_cancel':result=await manager.cancel(a.id);break;case 'bongee_agent_list':result=await manager.list();}return {content:[{type:'text',text:JSON.stringify(result)}]};}catch(e){return {isError:true,content:[{type:'text',text:e.message}]};}
 });
 let closing=false;async function stop(){if(closing)return;closing=true;await manager.shutdown();await baton.close();await upstream.close();await server.close();process.exit(0);}process.on('SIGINT',stop);process.on('SIGTERM',stop);process.stdin.on('end',stop);
 await server.connect(new StdioServerTransport());

@@ -9,6 +9,7 @@ export function safeEnv(source=process.env){
  const keys=['HOME','PATH','TMPDIR','USER','LANG','LC_ALL','SHELL','CODEX_HOME','XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME'];
  return Object.fromEntries(keys.filter(k=>typeof source[k]==='string').map(k=>[k,source[k]]));
 }
+export function ownerIsAlive(pid){if(!Number.isInteger(pid)||pid<=0)return false;try{process.kill(pid,0);return true;}catch(error){return error.code==='EPERM';}}
 export function command(provider,{prompt,cwd,mode}){
  if(provider==='codex')return ['codex',['exec','--json','--skip-git-repo-check','--sandbox',mode,'--ignore-user-config','-C',cwd,'-']];
  const tools=mode==='read-only'?'Read,Glob,Grep':'Read,Glob,Grep,Edit,Write';
@@ -24,11 +25,14 @@ export function eventParser(provider,job,maxResult=65536){
 }
 export class AgentManager {
  constructor({stateDir=join(homedir(),'.session-agents-mcp'),runner=spawn,authCheck,kill=(child)=>{try{process.kill(-child.pid,'SIGTERM');}catch{child.kill('SIGTERM');}const escalation=setTimeout(()=>{try{process.kill(-child.pid,'SIGKILL');}catch{}},1000);child.once('close',()=>clearTimeout(escalation));escalation.unref();},maxConcurrent=2,maxOutput=65536}={}){
-  Object.assign(this,{stateDir,runner,kill,maxConcurrent,maxOutput});this.jobs=new Map();this.running=new Map();this.authCheck=authCheck||((p)=>this.checkAuth(p));
+  Object.assign(this,{stateDir,runner,kill,maxConcurrent,maxOutput});this.jobs=new Map();this.running=new Map();this.owned=new Set();this.authCheck=authCheck||((p)=>this.checkAuth(p));
   this.ready=this.restore();this.startQueue=Promise.resolve();
  }
- async restore(){await mkdir(this.stateDir,{recursive:true,mode:0o700});await chmod(this.stateDir,0o700);for(const name of await readdir(this.stateDir)){if(!/^[\w-]+\.json$/.test(name))continue;try{const job=JSON.parse(await readFile(join(this.stateDir,name),'utf8'));if(!job.id||!job.status)continue;if(job.status==='running'){job.status='interrupted';job.reason='server restarted';job.finishedAt=new Date().toISOString();await this.persist(job);}this.jobs.set(job.id,job);}catch{}}}
- async persist(job){const file=join(this.stateDir,job.id+'.json');await writeFile(file+'.tmp',JSON.stringify(job),{mode:0o600});await rename(file+'.tmp',file);}
+ async restore(){await mkdir(this.stateDir,{recursive:true,mode:0o700});await chmod(this.stateDir,0o700);await this.refresh();}
+ async refresh(id){const names=id?[id+'.json']:await readdir(this.stateDir);for(const name of names){if(!/^[\w-]+\.json$/.test(name))continue;const jobId=name.slice(0,-5);if(this.owned.has(jobId))continue;try{const job=JSON.parse(await readFile(join(this.stateDir,name),'utf8'));if(job.id!==jobId||!job.status)continue;if(job.status==='running'&&!ownerIsAlive(job.ownerPid)){job.status='interrupted';job.reason='Owner process is no longer running';job.finishedAt=new Date().toISOString();await this.persist(job);}this.jobs.set(job.id,job);}catch{}}}
+ async persist(job){const file=join(this.stateDir,job.id+'.json'),temp=file+'.'+randomUUID()+'.tmp';await writeFile(temp,JSON.stringify(job),{mode:0o600});await rename(temp,file);}
+ async readStatus(id){await this.ready;await this.refresh(id);return this.status(id);}
+ async readResult(id){await this.ready;await this.refresh(id);return this.result(id);}
  async checkAuth(provider){return new Promise(resolveStatus=>{
   let text='',done=false;const child=this.runner(provider,provider==='codex'?['login','status']:['auth','status'],{env:safeEnv(),shell:false,stdio:['ignore','pipe','pipe']});
   const finish=(available,authenticated)=>{if(done)return;done=true;clearTimeout(timer);resolveStatus({provider,available,authenticated});};
@@ -46,8 +50,8 @@ export class AgentManager {
   if(!Number.isInteger(timeoutSeconds)||timeoutSeconds<1||timeoutSeconds>600)throw Error('Timeout must be 1 to 600 seconds');
   if(this.running.size>=this.maxConcurrent)throw Error('Concurrent agent limit reached');
   const auth=await this.authCheck(provider);if(!auth.available||!auth.authenticated)throw Error('Provider CLI login is required');
-  const job={id:randomUUID(),provider,cwd:directory,mode,status:'running',startedAt:new Date().toISOString(),output:'',truncated:false};
-  this.jobs.set(job.id,job);try{await this.persist(job);}catch{Object.assign(job,{status:'failed',reason:'Unable to persist agent state',persistenceError:true,finishedAt:new Date().toISOString()});throw Error('Unable to persist agent state');}
+  const job={id:randomUUID(),provider,cwd:directory,mode,status:'running',ownerPid:process.pid,startedAt:new Date().toISOString(),output:'',truncated:false};
+  this.jobs.set(job.id,job);this.owned.add(job.id);try{await this.persist(job);}catch{Object.assign(job,{status:'failed',reason:'Unable to persist agent state',persistenceError:true,finishedAt:new Date().toISOString()});throw Error('Unable to persist agent state');}
   const [binary,args]=command(provider,{prompt,cwd:directory,mode});let child;
   try{child=this.runner(binary,args,{cwd:directory,env:safeEnv(),shell:false,detached:true,stdio:['pipe','pipe','pipe']});}catch{job.status='failed';job.reason='Unable to start provider';job.finishedAt=new Date().toISOString();try{await this.persist(job);}catch{job.persistenceError=true;}return this.status(job.id);}
   const parser=eventParser(provider,job,this.maxOutput),decoder=new StringDecoder('utf8');const handle={child,timer:null,settled:false};this.running.set(job.id,handle);
@@ -61,7 +65,7 @@ export class AgentManager {
  }
  status(id){const job=this.jobs.get(id);if(!job)throw Error('Unknown agent');const {output,...status}=job;return status;}
  result(id){const job=this.jobs.get(id);if(!job)throw Error('Unknown agent');return {...job};}
- async list(){await this.ready;return [...this.jobs.values()].map(j=>this.status(j.id));}
+ async list(){await this.ready;await this.refresh();return [...this.jobs.values()].map(j=>this.status(j.id));}
  async cancel(id){await this.ready;this.status(id);const handle=this.running.get(id);if(handle){const saved=handle.finish('cancelled','Cancelled by user');this.kill(handle.child);await saved;}return this.status(id);}
  async shutdown(){await this.ready;await Promise.all([...this.running.keys()].map(id=>this.cancel(id)));}
 }
