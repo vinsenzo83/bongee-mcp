@@ -27,7 +27,7 @@ export function eventParser(provider,job,maxResult=65536){
  return {push(chunk){for(const fragment of chunk.toString().split(/(?<=\n)/)){const newline=fragment.endsWith('\n');if(!discarding){pending+=fragment;if(pending.length>1024*1024){pending='';discarding=true;}}if(newline){if(!discarding)event(pending);pending='';discarding=false;}}},finish(){if(pending&&!discarding)event(pending);return completed&&!failed;}};
 }
 export class AgentManager {
- constructor({stateDir=join(homedir(),'.session-agents-mcp'),runner=spawn,authCheck,kill=(child)=>{try{process.kill(-child.pid,'SIGTERM');}catch{child.kill('SIGTERM');}const escalation=setTimeout(()=>{try{process.kill(-child.pid,'SIGKILL');}catch{}},1000);child.once('close',()=>clearTimeout(escalation));escalation.unref();},maxConcurrent=2,maxOutput=65536}={}){
+ constructor({stateDir=join(homedir(),'.session-agents-mcp'),runner=spawn,authCheck,kill=(child)=>{const signal=value=>{try{process.kill(-child.pid,value);}catch{try{child.kill(value);}catch{}}};signal('SIGTERM');const escalation=setTimeout(()=>signal('SIGKILL'),1000);child.once('close',()=>{clearTimeout(escalation);signal('SIGKILL');});escalation.unref();},maxConcurrent=2,maxOutput=65536}={}){
   Object.assign(this,{stateDir,runner,kill,maxConcurrent,maxOutput});this.jobs=new Map();this.running=new Map();this.owned=new Set();this.authCheck=authCheck||((p)=>this.checkAuth(p));
   this.persistQueues=new Map();this.ready=this.restore();this.startQueue=Promise.resolve();
  }
@@ -61,19 +61,20 @@ export class AgentManager {
   this.jobs.set(job.id,job);this.owned.add(job.id);try{await this.persist(job);}catch{Object.assign(job,{status:'failed',reason:'Unable to persist agent state',persistenceError:true,finishedAt:new Date().toISOString()});throw Error('Unable to persist agent state');}
   const [binary,args]=command(provider,{prompt,cwd:directory,mode,schemaPath,resultSchema});let child;
   try{child=this.runner(binary,args,{cwd:directory,env:safeEnv(),shell:false,detached:true,stdio:['pipe','pipe','pipe']});}catch{job.status='failed';job.reason='Unable to start provider';job.finishedAt=new Date().toISOString();try{await this.persist(job);}catch{job.persistenceError=true;}return this.status(job.id);}
-  const parser=eventParser(provider,job,this.maxOutput),decoder=new StringDecoder('utf8');const handle={child,timer:null,settled:false};this.running.set(job.id,handle);
+  const parser=eventParser(provider,job,this.maxOutput),decoder=new StringDecoder('utf8');let resolveStopped;const stopped=new Promise(resolve=>{resolveStopped=resolve;});const handle={child,timer:null,settled:false,stopped,requested:null};this.running.set(job.id,handle);
   let persisting=false;handle.progressTimer=setInterval(async()=>{if(persisting||handle.settled)return;persisting=true;try{await this.persist(job);}catch{job.persistenceError=true;}finally{persisting=false;}},1000);handle.progressTimer.unref();
-  const finish=async(status,reason,code)=>{if(handle.settled)return;handle.settled=true;clearTimeout(handle.timer);clearInterval(handle.progressTimer);this.running.delete(job.id);Object.assign(job,{status,finishedAt:new Date().toISOString()});if(reason)job.reason=reason;if(Number.isInteger(code))job.exitCode=code;try{await this.persist(job);}catch{job.persistenceError=true;}};handle.finish=finish;
+  const finish=async(status,reason,code)=>{if(handle.settled)return;handle.settled=true;clearTimeout(handle.timer);clearInterval(handle.progressTimer);this.running.delete(job.id);Object.assign(job,{status,finishedAt:new Date().toISOString()});if(reason)job.reason=reason;if(Number.isInteger(code))job.exitCode=code;try{await this.persist(job);}catch{job.persistenceError=true;}finally{resolveStopped();}};handle.finish=finish;
+  handle.stop=(status,reason)=>{if(!handle.requested&&!handle.settled){handle.requested={status,reason};job.stopRequested=status;job.activity='종료 대기 중';clearTimeout(handle.timer);try{this.kill(child);}catch{try{child.kill('SIGKILL');}catch{}}}return stopped;};
   const append=value=>{parser.push(value);const space=this.maxOutput-job.output.length;if(value.length>space)job.truncated=true;job.output+=value.slice(0,Math.max(0,space));};child.stdout?.on('data',data=>append(decoder.write(data)));
   // Provider diagnostics may echo prompts or credentials, so stderr is discarded.
   child.stderr?.on('data',()=>{});child.stdin?.on('error',()=>{});
-  child.on('error',()=>{void finish('failed','Unable to start provider');});child.on('close',code=>{append(decoder.end());const success=parser.finish()&&code===0;void finish(success?'completed':'failed',success?undefined:'Provider did not report successful completion',code);});
-  handle.timer=setTimeout(()=>{void finish('timed-out','Execution time limit reached').catch(()=>{});this.kill(child);},timeoutSeconds*1000);
+  child.on('error',()=>{if(!handle.requested)handle.requested={status:'failed',reason:'Unable to start provider'};});child.on('close',code=>{append(decoder.end());const success=parser.finish()&&code===0;const requested=handle.requested;void finish(requested?.status||(success?'completed':'failed'),requested?.reason||(success?undefined:'Provider did not report successful completion'),code);});
+  handle.timer=setTimeout(()=>{void handle.stop('timed-out','Execution time limit reached');},timeoutSeconds*1000);
   child.stdin?.end(role?'작업 역할: '+role+'\n\n'+prompt:prompt);return this.status(job.id);
  }
  status(id){const job=this.jobs.get(id);if(!job)throw Error('Unknown agent');const {output,...status}=job;return status;}
  result(id){const job=this.jobs.get(id);if(!job)throw Error('Unknown agent');return {...job};}
  async list(){await this.ready;await this.refresh();return [...this.jobs.values()].map(j=>this.status(j.id));}
- async cancel(id){await this.ready;this.status(id);const handle=this.running.get(id);if(handle){const saved=handle.finish('cancelled','Cancelled by user');this.kill(handle.child);await saved;}return this.status(id);}
+ async cancel(id){await this.ready;this.status(id);const handle=this.running.get(id);if(handle){await handle.stop('cancelled','Cancelled by user');}return this.status(id);}
  async shutdown(){await this.ready;await Promise.all([...this.running.keys()].map(id=>this.cancel(id)));}
 }
