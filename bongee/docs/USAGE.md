@@ -4,6 +4,8 @@
 
 ## 세션 실행 도구 전체
 
+한 번에 자동 개발하려면 [4단계 자동 실행 설명서](AUTO-PIPELINE.md)의 bongee_pipeline_start를 사용합니다.
+
 기획자·개발자·테스터·리뷰어 역할과 4단계 상태줄 설치는 [하단 상태 표시 설명서](STATUS-DISPLAY.md)를 따릅니다. `bongee_agent_start`에 선택 입력 role/name/phase를 지정할 수 있으며, `bongee_monitor_status`에 프로젝트 cwd를 넣으면 실제 역할별 상태를 조회합니다.
 
 | 도구 | 기능 | 입력 |
