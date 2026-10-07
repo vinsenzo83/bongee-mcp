@@ -1,0 +1,37 @@
+import {readFile,writeFile,mkdir,stat,mkdtemp,rename,rm,open,chmod} from 'node:fs/promises';
+import {createHash,randomUUID} from 'node:crypto';
+import {spawn} from 'node:child_process';
+import {homedir} from 'node:os';
+import {join,dirname,resolve} from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+
+export function validateConnection(config){
+ if(!config||typeof config!=='object'||Array.isArray(config))throw Error('Invalid connection package');
+ let url;try{url=new URL(config.url);}catch{throw Error('Invalid connection URL');}
+ if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||!/^\/?$/.test(url.pathname))throw Error('Connection must use an HTTPS server URL');
+ if(typeof config.token!=='string'||!/^bgr_[A-Za-z0-9_-]{43}$/.test(config.token)||typeof config.principal!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(config.principal))throw Error('Invalid private runner connection');
+ const releaseTag=config.releaseTag||'v0.3.0';if(!/^v\d+\.\d+\.\d+$/.test(releaseTag)||releaseTag.length>32)throw Error('Invalid release version');
+ return {url:url.origin,token:config.token,principal:config.principal,releaseTag};
+}
+export async function readConnection(path){const s=await stat(path);if(!s.isFile()||s.size>4096)throw Error('Invalid connection file');return validateConnection(JSON.parse(await readFile(path,'utf8')));}
+export async function runCommand(command,args,{cwd,logPath}={}){return new Promise((resolveResult,reject)=>{open(logPath,'a',0o600).then(handle=>{const child=spawn(command,args,{cwd,shell:false,stdio:['ignore',handle.fd,handle.fd]});child.once('error',()=>{void handle.close();reject(Error('Required installation command is unavailable'));});child.once('close',code=>{void handle.close();if(code===0)resolveResult();else reject(Error('Installation command failed; inspect the private installation log'));});}).catch(()=>reject(Error('Unable to open private installation log')));});}
+async function download(url,destination,maxBytes){const response=await fetch(url,{signal:AbortSignal.timeout(180000)});if(!response.ok||!response.body)throw Error('Unable to download public Bongee release');const handle=await open(destination,'wx',0o600);let size=0;const hash=createHash('sha256');try{for await(const chunk of response.body){size+=chunk.length;if(size>maxBytes)throw Error('Release download exceeds limit');hash.update(chunk);await handle.writeFile(chunk);}return hash.digest('hex');}finally{await handle.close();}}
+async function capture(command,args){return new Promise((resolveResult,reject)=>{const child=spawn(command,args,{shell:false,stdio:['ignore','pipe','ignore']});let text='',large=false;child.stdout.on('data',chunk=>{text+=chunk;if(text.length>16*1024*1024){large=true;child.kill('SIGKILL');}});child.once('error',()=>reject(Error('unzip is required to install Bongee')));child.once('close',code=>code===0&&!large?resolveResult(text):reject(Error('Invalid public release archive')));});}
+export async function installConnection(configPath,{home=homedir(),report=message=>process.stdout.write(message+'\n')}={}){
+ if(process.platform==='win32')throw Error('Use WSL with Node.js and unzip to install Bongee on Windows');
+ const config=await readConnection(configPath),base=join(home,'.local/share/bongee'),versionDir=join(base,config.releaseTag),configDir=join(home,'.config/bongee/connections'),logsDir=join(home,'.local/state/bongee');
+ for(const dir of [base,configDir,logsDir]){await mkdir(dir,{recursive:true,mode:0o700});await chmod(dir,0o700);}
+ const logPath=join(logsDir,'install-'+randomUUID()+'.log');await writeFile(logPath,'',{mode:0o600,flag:'wx'});
+ let installed=false;try{installed=(await stat(join(versionDir,'.bongee-installed'))).isFile();}catch{}
+ if(!installed){report('Bongee 공개 소스를 다운로드하고 검증합니다.');const temp=await mkdtemp(join(base,'.install-'));try{
+  const name=`bongee-mcp-${config.releaseTag}.zip`,release=`https://github.com/vinsenzo83/bongee-mcp/releases/download/${config.releaseTag}`,archive=join(temp,name),sums=join(temp,`SHA256SUMS-${config.releaseTag}.txt`);
+  const actual=await download(release+'/'+name,archive,256*1024*1024);await download(release+`/SHA256SUMS-${config.releaseTag}.txt`,sums,65536);const records=(await readFile(sums,'utf8')).split(/\r?\n/).map(line=>line.match(/^([0-9a-f]{64})\s+\*?([^\r\n]+)$/i)).filter(Boolean);const expected=records.find(record=>record[2]===name)?.[1];if(!expected||actual!==expected.toLowerCase())throw Error('Bongee release checksum verification failed');
+  const entries=(await capture('unzip',['-Z','-1',archive])).trim().split('\n'),prefix=`bongee-mcp-${config.releaseTag}/`;if(entries.some(entry=>!entry.startsWith(prefix)||entry.includes('\\')||entry.split('/').includes('..'))||!(entries.includes(prefix+'bongee/start-runner.mjs')))throw Error('Invalid public release paths');
+  if((await capture('unzip',['-Z','-l',archive])).split('\n').some(line=>/^l[rwx-]{9}\s/.test(line)))throw Error('Public release symlinks are not allowed');
+  const extracted=join(temp,'extract');await mkdir(extracted,{mode:0o700});await runCommand('unzip',['-q',archive,'-d',extracted],{logPath});const root=join(extracted,`bongee-mcp-${config.releaseTag}`);report('Bongee 실행 의존성을 설치합니다.');await runCommand('npm',['install','--no-audit','--no-fund'],{cwd:join(root,'bongee'),logPath});await writeFile(join(root,'.bongee-installed'),actual+'\n',{mode:0o600});try{await rename(root,versionDir);}catch(e){if(!['EEXIST','ENOTEMPTY'].includes(e.code))throw e;throw Error('Existing installation is incomplete; remove only the version installation directory and retry');}
+ }finally{await rm(temp,{recursive:true,force:true});}}
+ const stateDir=join(base,'state',config.principal);await mkdir(stateDir,{recursive:true,mode:0o700});await chmod(stateDir,0o700);const connectionPath=join(configDir,randomUUID()+'.json');await writeFile(connectionPath,JSON.stringify({...config,stateDir}),{mode:0o600,flag:'wx'});const log=await open(join(logsDir,'runner-'+randomUUID()+'.log'),'wx',0o600);let child;try{child=spawn(process.execPath,[join(versionDir,'bongee/start-runner.mjs'),'--config',connectionPath],{cwd:join(versionDir,'bongee'),env:process.env,shell:false,detached:true,stdio:['ignore',log.fd,log.fd]});await new Promise((resolveStarted,reject)=>{child.once('spawn',resolveStarted);child.once('error',()=>reject(Error('Unable to start Bongee runner')));});child.unref();}finally{await log.close();}
+ report('Bongee 실행기를 시작했습니다. 서버 연결을 확인합니다.');let connected=false;for(let i=0;i<20;i++){try{const response=await fetch(config.url+'/runner/status',{headers:{Authorization:'Bearer '+config.token},signal:AbortSignal.timeout(2000)});if(response.ok){const status=await response.json();if(status.connected===true||status.runnerConnected===true){connected=true;break;}}}catch{}await new Promise(r=>setTimeout(r,1000));}
+ report(connected?'Bongee 실행기 연결이 확인되었습니다. MCP 세션에서 작업을 요청할 수 있습니다.':'실행기는 시작했지만 서버 연결은 아직 확인되지 않았습니다. 개인 실행기 로그를 확인하세요.');return {started:true,connected,connectionPath};
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){const configPath=process.argv[2]||join(dirname(fileURLToPath(import.meta.url)),'connection.json');installConnection(configPath).catch(()=>{process.stderr.write('Bongee 연결 설치에 실패했습니다. Node.js·npm·unzip과 인터넷 연결을 확인하고 개인 설치 로그를 확인하세요. Windows에서는 WSL을 사용하세요.\n');process.exitCode=1;});}
