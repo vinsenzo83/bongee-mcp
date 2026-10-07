@@ -4,6 +4,8 @@ Ruflo 원본 전체 소스와 도구를 보존하면서, 별도 AI API 키 없�
 
 ## 다운로드·설치
 
+**주소로 연결:** `https://bongee-production.up.railway.app/mcp`를 원격 MCP에 등록하고 브라우저에서 연결을 허용하세요. 토큰 복사 없이 자동 인증됩니다. [Codex·Claude Code 주소 설치와 내 PC 실행기 연결](docs/URL-INSTALL.md).
+
 ```sh
 git clone https://github.com/vinsenzo83/bongee-mcp.git
 cd bongee-mcp/bongee
@@ -43,14 +45,16 @@ CLI 호출에서 API 키 환경변수를 전달하지 않습니다. Claude의 �
 
 Endpoint: `https://bongee-production.up.railway.app/mcp`
 
-서버는 로컬 PC 실행기에 작업을 전달합니다. 공개 상태 확인은 `/health`, 실행 요청에는 비공개 `BONGEE_GATEWAY_TOKEN`이 필요합니다. 이 값은 AI API 키가 아니라 서버와 실행기의 연결 권한입니다. 누구나 사용자 PC에서 코드를 실행할 수 있도록 공개하지 않습니다.
+주소 등록 후 브라우저에서 연결을 허용하면 OAuth 인증이 자동으로 처리됩니다. 브라우저로 위 주소를 열면 설치 안내를 볼 수 있습니다. 별도 AI API 키나 수동 연결 토큰 입력은 필요하지 않습니다.
+
+새 사용자는 안내의 내 PC 실행기 연결에서 개인 ZIP을 내려받고 실행합니다. 공개 소스 검증·의존성 설치·개인 연결 설정 저장·실행기 시작을 자동 처리합니다. 실제 작업에는 자신의 기존 Codex 또는 Claude Code CLI 로그인이 필요합니다. 작업과 결과는 사용자별로 분리됩니다. [상세 설치 설명서](docs/URL-INSTALL.md).
 
 ```sh
 BONGEE_GATEWAY_URL=https://your-gateway.example \
 BONGEE_GATEWAY_TOKEN=<your-private-connection-token> node runner.mjs
 ```
 
-자신의 서버는 `BONGEE_GATEWAY_TOKEN`을 환경변수에 설정하고 `npm run start:gateway`로 시작합니다. 제공된 공유 서버는 소유자의 연결 권한이 필요하며, 다른 사용자는 자신의 로컬 MCP로 바로 사용하거나 별도 게이트웨이를 배포할 수 있습니다. 연결 토큰·CLI 자격증명은 저장소·ZIP에 포함하지 않습니다.
+위 환경변수 실행 방식은 자체 서버 운영자의 관리 연결입니다. 자체 서버는 `BONGEE_GATEWAY_TOKEN`, `BONGEE_PUBLIC_URL`, 영구 저장 위치 `BONGEE_STATE_DIR`를 설정하고 `npm run start:gateway`로 시작합니다. 개인 연결 ZIP의 권한 정보와 CLI 자격증명은 공개 소스 ZIP·저장소에 포함하지 않습니다.
 
 원격에서 전체 로컬 도구가 전달되고 원격 작업 관리6개가 추가됩니다. 로컬 실행기가 켜져 있어야 합니다. 서버 재시작 시 원격 작업 기록이 초기화됩니다. 긴 원본 호출은 대기ID를 반환할 수 있으며 `bongee_remote_agent_result`로 확인합니다. 도구 취소는 이미 발생한 외부 변경을 되돌리지 않습니다.
 

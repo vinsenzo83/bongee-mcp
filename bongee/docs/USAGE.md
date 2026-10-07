@@ -53,7 +53,7 @@ start가 반환한 id로 status/result를 조회합니다. 작업 시작은 완�
 
 ## 원격 실행
 
-[README의 원격 서버 설정](../README.md#원격-mcp-서버)을 따릅니다. 로컬 runner가 켜져 있어야 합니다. 공유 서버에는 소유자의 비공개 연결 권한이 필요하며 다운로드한 사용자는 자신의 로컬 MCP를 사용할 수 있습니다.
+[주소 설치 안내](URL-INSTALL.md)를 따라 MCP 주소를 등록하고 브라우저 연결을 허용합니다. 토큰 복사 없이 자동 인증됩니다. 새로운 사용자는 개인 실행기 연결 ZIP을 실행해 자신의 PC를 연결합니다. 로컬 runner가 켜져 있어야 실제 작업을 실행할 수 있습니다. 사용자별 작업과 실행기는 분리됩니다.
 
 원격 전용 도구는 `bongee_remote_provider_status`, `bongee_remote_agent_start`, `bongee_remote_agent_status`, `bongee_remote_agent_result`, `bongee_remote_agent_cancel`, `bongee_remote_agent_list` 6개입니다. start의 입력은 위 세션 실행과 같으며 cwd는 실행기 PC의 경로입니다. 상태·결과·중단에는 반환된 id를 사용합니다. 긴 원본 호출이 대기 ID를 반환하면 remote_agent_result로 확인합니다. 서버 재시작 시 원격 작업 기록은 초기화됩니다.
 
