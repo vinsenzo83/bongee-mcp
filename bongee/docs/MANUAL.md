@@ -1,6 +1,6 @@
 # 전체 기능 상세 매뉴얼
 
-카탈로그 수집: 2026-10-07T12:10:44.893Z. 전체 **417개**: Ruflo 원본 **358개**, Bongee 8개, BATON 45개, 원격 관리 6개. 원본 이름·입력 스키마 대조: 누락 0개, 변경 0개.
+카탈로그 수집: 2026-10-07T13:45:13.211Z. 전체 **424개**: Ruflo 원본 **358개**, Bongee 15개, BATON 45개, 원격 관리 6개. 원본 이름·입력 스키마 대조: 누락 0개, 변경 0개.
 
 [설치·기본 사용](USAGE.md) · [작업 순서 예제](WORKFLOWS.md) · [하단 상태 표시](STATUS-DISPLAY.md) · [전체 JSON 스키마](tool-catalog.json) · [대조 근거](catalog-parity.json)
 
@@ -51,7 +51,7 @@
 | 사업 Pod 검증·백엔드 선택 | 2 | [business](reference/business.md) |
 | HTTP 요청 | 1 | [http](reference/http.md) |
 | 미션 계획·행동 요청 | 5 | [mission](reference/mission.md) |
-| Bongee 로그인 세션 실행 | 8 | [bongee](reference/bongee.md) |
+| Bongee 로그인 세션 실행 | 15 | [bongee](reference/bongee.md) |
 | BATON 암호화 인계·팀·계정 | 39 | [baton](reference/baton.md) |
 | BATON 검증 계획·신호 | 6 | [spider](reference/spider.md) |
 | 원격 실행기 관리 | 6 | [remote](reference/remote.md) |
@@ -416,6 +416,13 @@
 - [mission_get](reference/mission.md#mission_get)
 - [mission_events](reference/mission.md#mission_events)
 - [mission_request_action](reference/mission.md#mission_request_action)
+- [bongee_pipeline_start](reference/bongee.md#bongee_pipeline_start)
+- [bongee_pipeline_status](reference/bongee.md#bongee_pipeline_status)
+- [bongee_pipeline_result](reference/bongee.md#bongee_pipeline_result)
+- [bongee_pipeline_list](reference/bongee.md#bongee_pipeline_list)
+- [bongee_pipeline_pause](reference/bongee.md#bongee_pipeline_pause)
+- [bongee_pipeline_resume](reference/bongee.md#bongee_pipeline_resume)
+- [bongee_pipeline_cancel](reference/bongee.md#bongee_pipeline_cancel)
 - [bongee_baton_status](reference/bongee.md#bongee_baton_status)
 - [bongee_provider_status](reference/bongee.md#bongee_provider_status)
 - [bongee_agent_start](reference/bongee.md#bongee_agent_start)

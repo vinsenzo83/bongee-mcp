@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-07T12:10:44.893Z",
+  "capturedAt": "2026-10-07T13:45:13.211Z",
   "source": "MCP tools/list (read-only)",
   "tools": [
     {
@@ -8985,6 +8985,352 @@
           "expectedRevision",
           "action"
         ]
+      }
+    },
+    {
+      "name": "bongee_pipeline_start",
+      "description": "Automatically run actual planner+researcher → architect+designer → developer → real test commands+tester+reviewer. Handoff validated artifacts; repair and reverify failures. Returns pipeline ID immediately. Developer edits the target project. Separate CLI login sessions; not merely registry records.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cwd": {
+            "type": "string",
+            "description": "Existing target project absolute path"
+          },
+          "request": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60000,
+            "description": "Complete user goal and constraints"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "codex",
+              "claude"
+            ]
+          },
+          "providers": {
+            "type": "object",
+            "properties": {
+              "planner": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "researcher": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "architect": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "designer": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "developer": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "tester": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "reviewer": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "checks": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "command": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "command",
+                "args"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "maxRepairRounds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "default": 3
+          },
+          "stageTimeoutSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600,
+            "default": 600
+          },
+          "checkTimeoutSeconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600,
+            "default": 300
+          }
+        },
+        "required": [
+          "cwd",
+          "request"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bongee_pipeline_status",
+      "description": "Read actual automatic pipeline progress, roles, rounds and reasons; no model invocation.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Pipeline ID returned by start"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bongee_pipeline_result",
+      "description": "Read pipeline artifacts, verification receipts, role history and final outcome. Start/completed agent text alone does not mean verified completion.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Pipeline ID returned by start"
+          },
+          "historyOffset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "historyLimit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 3
+          },
+          "includeCurrent": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bongee_pipeline_list",
+      "description": "List persistent automatic pipeline jobs, optionally scoped to project.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cwd": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bongee_pipeline_pause",
+      "description": "Pause the automatic pipeline and stop active agent/check work. Already written files remain. Resume reruns uncertain work.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Pipeline ID returned by start"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bongee_pipeline_resume",
+      "description": "Resume paused/interrupted/failed pipeline from confirmed artifacts; optionally change provider/checks/repair cap. Cannot seize a live owner or skip verification.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Pipeline ID returned by start"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "codex",
+              "claude"
+            ]
+          },
+          "providers": {
+            "type": "object",
+            "properties": {
+              "planner": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "researcher": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "architect": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "designer": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "developer": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "tester": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              },
+              "reviewer": {
+                "type": "string",
+                "enum": [
+                  "codex",
+                  "claude"
+                ]
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          },
+          "checks": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "command": {
+                  "type": "string"
+                },
+                "args": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "command",
+                "args"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "maxRepairRounds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "default": 3
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bongee_pipeline_cancel",
+      "description": "Cancel pipeline and active agent/test processes. Does not revert files or external changes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Pipeline ID returned by start"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
       }
     },
     {

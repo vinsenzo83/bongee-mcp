@@ -1,0 +1,125 @@
+{
+  "verifiedAt": "2026-10-07T13:03:48.574Z",
+  "transport": "remote MCP over HTTPS with connected local executor",
+  "toolCount": 424,
+  "provider": "codex existing login",
+  "pipelineId": "5b2f7239-8299-4316-abca-335adfd22ff8",
+  "status": "completed",
+  "repairRounds": 1,
+  "phases": [
+    {
+      "id": "planning",
+      "label": "기획",
+      "status": "completed"
+    },
+    {
+      "id": "design",
+      "label": "설계·디자인",
+      "status": "completed"
+    },
+    {
+      "id": "development",
+      "label": "개발",
+      "status": "completed"
+    },
+    {
+      "id": "verification",
+      "label": "검증",
+      "status": "completed"
+    }
+  ],
+  "roles": [
+    {
+      "role": "planner",
+      "status": "completed",
+      "attempts": 1
+    },
+    {
+      "role": "researcher",
+      "status": "completed",
+      "attempts": 1
+    },
+    {
+      "role": "architect",
+      "status": "completed",
+      "attempts": 1
+    },
+    {
+      "role": "designer",
+      "status": "completed",
+      "attempts": 1
+    },
+    {
+      "role": "developer",
+      "status": "completed",
+      "attempts": 2
+    },
+    {
+      "role": "tester",
+      "status": "completed",
+      "attempts": 2
+    },
+    {
+      "role": "reviewer",
+      "status": "completed",
+      "attempts": 2
+    }
+  ],
+  "verificationRounds": [
+    {
+      "round": 0,
+      "kind": "checks",
+      "passed": false,
+      "workspaceChanged": true,
+      "checks": [
+        {
+          "id": "real-acceptance",
+          "status": "failed",
+          "exitCode": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "kind": "reviewed",
+      "passed": false,
+      "workspaceChanged": true,
+      "checks": [
+        {
+          "id": "real-acceptance",
+          "status": "failed",
+          "exitCode": 1
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "kind": "checks",
+      "passed": true,
+      "workspaceChanged": false,
+      "checks": [
+        {
+          "id": "real-acceptance",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    },
+    {
+      "round": 1,
+      "kind": "reviewed",
+      "passed": true,
+      "workspaceChanged": false,
+      "checks": [
+        {
+          "id": "real-acceptance",
+          "status": "passed",
+          "exitCode": 0
+        }
+      ]
+    }
+  ],
+  "testerVerdict": "pass",
+  "reviewerVerdict": "pass",
+  "scope": "Controlled dependency-free lucky draw module; not all Ruflo tool behavior or production service acceptance"
+}

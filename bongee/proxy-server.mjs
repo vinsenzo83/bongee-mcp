@@ -31,7 +31,7 @@ const extras=[
  {name:'bongee_agent_list',description:'List session executions.',inputSchema:{type:'object',properties:{}}},
  {name:'bongee_monitor_status',description:'Read actual role-based agent states grouped into planning, design, development and verification. Includes original agent_execute observations and distinguishes unobserved registry state. No model calls.',inputSchema:{type:'object',properties:{cwd:{type:'string',description:'Project absolute path. Default MCP working directory.'}}}}
 ];
-const server=new Server({name:'bongee',version:'0.1.0'},{capabilities:{tools:{}}});
+const server=new Server({name:'bongee',version:'0.2.0'},{capabilities:{tools:{}}});
 server.setRequestHandler(ListToolsRequestSchema,async()=>{let tools=[],cursor;do{const page=await upstream.listTools(cursor?{cursor}:{});tools.push(...page.tools);cursor=page.nextCursor;}while(cursor);return {tools:[...tools,...extras,...baton.tools([...tools,...extras].map(t=>t.name))]};});
 server.setRequestHandler(CallToolRequestSchema,async request=>{const {name,arguments:a={}}=request.params;
  if(baton.tools().some(t=>t.name===name))return baton.call(name,a);

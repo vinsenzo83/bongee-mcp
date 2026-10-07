@@ -62,3 +62,11 @@ provider 기본값은 codex입니다. providers 객체의 planner/researcher/arc
 ## 하단 표시
 
 [상태줄 설치](STATUS-DISPLAY.md)를 따르면 자동 실행 ID·상태·수정 회차와 기획/설계·디자인/개발/검증을 표시합니다. `응답 완료`는 개별 역할의 응답이고 자동 실행의 `검증 완료`와 구분됩니다. 읽기만 하는 모니터 자체는 모델을 호출하지 않습니다.
+
+## 검증 근거와 큰 결과 조회
+
+검증 로그와 역할 산출물은 각 회차의 변경하지 않는 파일로 보존하고 최신 결과와 구분합니다. `bongee_pipeline_result`의 이력은 historyOffset=0, historyLimit=3이 기본값입니다. pagination의 total과 nextOffset으로 다음 페이지를 읽고, includeCurrent=false로 최신 산출물을 다시 받지 않고 이력만 조회할 수 있습니다. 전체 이력은 보존되며 페이지 밖의 항목도 검증에서 생략되지 않습니다.
+
+프로세스 감시는 OS의 ps 조회 권한이 필요합니다. 조회가 차단된 환경에서는 실행 실패로 기록합니다.
+
+원격 응답은 최대 8 MB입니다. 큰 결과는 historyLimit=1, includeCurrent=false로 페이지를 조회하세요. 큰 인계 맥락은 기록된 한도에 따라 실패를 명시합니다.
