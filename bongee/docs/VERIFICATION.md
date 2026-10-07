@@ -5,6 +5,7 @@
 - 로컬 MCP: Ruflo358 + 세션/상태7 + BATON45 =410 도구 (BATON 네트워크 연결 성공 시).
 - 원격 MCP: 위410 + 원격 실행기 관리6 =416 도구. 실제 HTTPS catalog 확인.
 - 원본 system_status 원격 호출 성공.
+- 원본 agent_spawn / agent_execute 도구도 별도 API키 없이 Codex 로그인 세션으로 실행해 정상 응답을 관측했다.
 - BATON SDK listTools45개, 익명 account 읽기 및 연결 상태 확인. 캡슐/방 생성·메시지 전송은 이번 검증에서 하지 않았다.
 - 별도 API키 없이 기존 ChatGPT 로그인 Codex CLI를 bongee 도구로 실행하고 정상 응답 관측.
 - 원격 서버→로컬 실행기→Codex 로그인→정상 응답까지 실제 관측.
