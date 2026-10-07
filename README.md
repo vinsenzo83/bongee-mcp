@@ -1,3 +1,13 @@
+# bongee MCP
+
+Ruflo 전체 소스를 보존한 봉이 MCP. Codex·Claude 기존 로그인 세션 실행 및 BATON 작업 인계를 추가합니다.
+
+[설치·기능·원격 MCP 안내](bongee/README.md) · [다운로드](https://github.com/vinsenzo83/bongee-mcp/releases/latest)
+
+원본 MIT 라이선스와 저작권을 유지합니다. 아래는 보존한 원본 Ruflo 문서입니다.
+
+---
+
 <div align="center">
 
 <a href="https://cognitum.one/agentic-engineering"><img src="ruflo/assets/ruflo-neon-flicker.gif" alt="Ruflo animated neon sign" width="100%"></a>

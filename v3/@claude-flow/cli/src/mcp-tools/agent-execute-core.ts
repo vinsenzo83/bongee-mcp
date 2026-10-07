@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getProjectCwd } from './types.js';
 import { configManager } from '../services/config-file-manager.js';
+import { callCliSession } from './cli-session-provider.js';
 
 const STORAGE_DIR = '.claude-flow';
 const AGENT_DIR = 'agents';
@@ -167,6 +168,9 @@ export interface AnthropicCallResult {
  * don't need to know which provider answered.
  */
 export async function callAnthropicMessages(input: AnthropicCallInput): Promise<AnthropicCallResult> {
+  const sessionProvider = process.env.RUFLO_SESSION_PROVIDER;
+  if (sessionProvider === 'codex' || sessionProvider === 'claude') return callCliSession(sessionProvider, input);
+  if (sessionProvider) return { success: false, error: 'RUFLO_SESSION_PROVIDER must be codex or claude' };
   // #2962 — precedence: explicit per-agent flag (input.provider, forwarded
   // from agent.provider by executeAgentTask, itself populated from a
   // user's `agent spawn --provider` flag) → env vars (RUFLO_PROVIDER + the
@@ -791,4 +795,3 @@ export async function executeAgentTask(input: AgentExecuteInput): Promise<AgentE
     }),
   };
 }
-

@@ -1,0 +1,2 @@
+import {readFile} from 'node:fs/promises';import {homedir} from 'node:os';import {join} from 'node:path';import {GatewayRunner} from './runner.mjs';
+const config=JSON.parse(await readFile(join(homedir(),'.config/bongee/gateway.json'),'utf8'));const runner=new GatewayRunner({url:config.url,token:config.token});const stop=async()=>{await runner.stop();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);await runner.run();
