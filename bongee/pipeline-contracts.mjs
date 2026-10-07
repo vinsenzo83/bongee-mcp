@@ -1,0 +1,15 @@
+const str={type:'string'},strings={type:'array',items:str};
+const obj=properties=>({type:'object',properties,required:Object.keys(properties),additionalProperties:false});
+const arr=properties=>({type:'array',items:obj(properties)});
+export const ROLE_SCHEMAS={
+ planner:obj({goals:strings,requirements:arr({id:str,description:str,verification:str})}),
+ researcher:obj({findings:strings,constraints:strings}),
+ architect:obj({implementationPlan:strings,files:arr({path:str,purpose:str})}),
+ designer:obj({hasUI:{type:'boolean'},specification:strings,noUIReason:str}),
+ developer:obj({summary:str,changedFiles:strings}),
+ tester:obj({verdict:{enum:['pass','fail'],type:'string'},acceptance:arr({id:str,status:{type:'string',enum:['pass','fail','not-verified']},evidence:str}),findings:strings}),
+ reviewer:obj({verdict:{type:'string',enum:['pass','fail']},findings:strings})
+};
+function validate(schema,value,path){if(schema.type==='object'){if(!value||typeof value!=='object'||Array.isArray(value))throw Error(path+' must be object');for(const k of schema.required)if(!(k in value))throw Error(path+' missing '+k);for(const k of Object.keys(value)){if(!schema.properties[k])throw Error(path+' unknown '+k);validate(schema.properties[k],value[k],path+'.'+k);}}else if(schema.type==='array'){if(!Array.isArray(value))throw Error(path+' must be array');value.forEach((v,i)=>validate(schema.items,v,path+'['+i+']'));}else if(typeof value!==schema.type)throw Error(path+' must be '+schema.type);if(schema.enum&&!schema.enum.includes(value))throw Error(path+' invalid value');}
+export function parseRoleResult(role,text){if(!ROLE_SCHEMAS[role])throw Error('Unknown role');if(typeof text!=='string'||Buffer.byteLength(text)>65536)throw Error('Role artifact missing or too large');const value=JSON.parse(text);validate(ROLE_SCHEMAS[role],value,role);if(role==='planner'){if(!value.goals.length||!value.requirements.length)throw Error('Planner must define goals and requirements');const ids=value.requirements.map(r=>r.id);if(ids.some(id=>!id.trim())||new Set(ids).size!==ids.length)throw Error('Requirement IDs must be unique');if(value.requirements.some(r=>!r.description.trim()||!r.verification.trim()))throw Error('Requirement descriptions and verification must be nonempty');}if(role==='designer'&&((value.hasUI&&!value.specification.length)||(!value.hasUI&&!value.noUIReason.trim())))throw Error('Designer must supply UI spec or justified no-UI reason');if(role==='tester'){const ids=value.acceptance.map(a=>a.id);if(new Set(ids).size!==ids.length)throw Error('Duplicate acceptance IDs');if(value.acceptance.some(a=>!a.evidence.trim()))throw Error('Acceptance evidence required');}return value;}
+export function validateAcceptance(tester,planner){const expected=planner.requirements.map(r=>r.id).sort(),actual=tester.acceptance.map(r=>r.id).sort();if(JSON.stringify(expected)!==JSON.stringify(actual))throw Error('Tester acceptance must cover every planner requirement exactly once');return tester.verdict==='pass'&&tester.acceptance.every(a=>a.status==='pass')&&!tester.findings.length;}
