@@ -1,5 +1,5 @@
 import {spawn} from 'node:child_process';
-import {realpath,readdir,readFile,lstat,open} from 'node:fs/promises';
+import {realpath,readdir,readFile,lstat,open,readlink} from 'node:fs/promises';
 import {constants} from 'node:fs';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
@@ -14,7 +14,7 @@ export function validateChecks(checks){
 }
 export async function discoverChecks(cwd){
  const root=await realpath(cwd),names=await readdir(root),out=[];const add=(id,command,args)=>out.push({id,command,args});
- if(names.includes('package.json')){const pkg=JSON.parse(await readFile(join(root,'package.json'),'utf8'));const scripts=pkg.scripts||{},seen=new Set();const canonicalScript=(key,visited=new Set())=>{if(visited.has(key))return null;visited.add(key);const value=scripts[key];if(typeof value!=='string')return null;const alias=value.trim().match(/^(?:npm run|npm run-script|pnpm run|yarn) ([\w:-]+)$/);return alias?canonicalScript(alias[1],visited):value.trim();};for(const key of ['build','typecheck','check','lint','test']){const s=scripts[key];if(typeof s!=='string'||!s.trim()||/\b(?:--watch|watch|--watchAll)\b/.test(s)||/no test specified|\becho\b.*\b(?:test|placeholder)|^exit\s+0$/.test(s))continue;const canonical=canonicalScript(key);if(!canonical||/no test specified|^exit\s+0$|\b(?:--watch|watch|--watchAll)\b/.test(canonical))continue;if(seen.has(canonical))continue;seen.add(canonical);add(`node-${key}`,'npm',['run',key]);}}
+ if(names.includes('package.json')){const pkg=JSON.parse(await readFile(join(root,'package.json'),'utf8'));const scripts=pkg.scripts||{},seen=new Set();const canonicalScript=(key,visited=new Set())=>{if(visited.has(key))return null;visited.add(key);const value=scripts[key];if(typeof value!=='string')return null;const alias=value.trim().match(/^(?:npm run|npm run-script|pnpm run|yarn) ([\w:-]+)$/);return alias?canonicalScript(alias[1],visited):value.trim();};for(const key of ['build','typecheck','check','lint','test']){const s=scripts[key];if(typeof s!=='string'||!s.trim()||/\b(?:--watch|watch|--watchAll)\b/.test(s)||/no test specified|\becho\b.*\b(?:test|placeholder)|^exit\s+0$/.test(s))continue;const canonical=canonicalScript(key);if(!canonical||/no test specified|\becho\b.*\b(?:test|placeholder)|^exit\s+0$|\b(?:--watch|watch|--watchAll)\b/.test(canonical))continue;if(seen.has(canonical))continue;seen.add(canonical);add(`node-${key}`,'npm',['run',key]);}}
  if(names.some(n=>['pytest.ini','pyproject.toml','requirements.txt','setup.cfg','tox.ini'].includes(n)))add('python-test','python3',['-m','pytest']);
  if(names.includes('Cargo.toml'))add('rust-test','cargo',['test']);
  if(names.includes('go.mod'))add('go-test','go',['test','./...']);
@@ -23,10 +23,10 @@ export async function discoverChecks(cwd){
  if(names.some(n=>['build.gradle','build.gradle.kts'].includes(n)))add('gradle-test',names.includes('gradlew')?'./gradlew':'gradle',['test']);
  return validateChecks(out);
 }
-const ignored=new Set(['.git','node_modules','dist','build','.next','venv','.venv','__pycache__','.cache','target','coverage','.pytest_cache','.mypy_cache','.gradle','bin','obj','.bongee']);
+const ignored=new Set(['.git','node_modules','.next','venv','.venv','__pycache__','.cache','target','coverage','.pytest_cache','.mypy_cache','.gradle','.bongee']);
 export async function workspaceFingerprint(cwd){
  const root=await realpath(cwd),hash=createHash('sha256');let files=0,bytes=0,entries=0;
- async function walk(dir,relative=''){for(const name of (await readdir(dir)).sort()){if(++entries>50000)throw new Error('Workspace fingerprint exceeds entry limit');if(ignored.has(name))continue;const path=join(dir,name),rel=relative?`${relative}/${name}`:name,s=await lstat(path);if(s.isSymbolicLink())continue;if(s.isDirectory()){await walk(path,rel);continue;}if(!s.isFile())continue;if(++files>20000||s.size>32*1024*1024||(bytes+=s.size)>256*1024*1024)throw new Error('Workspace fingerprint exceeds source limits');const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);let data;try{const actual=await handle.stat();if(!actual.isFile()||actual.size!==s.size)throw new Error('Source changed during fingerprint');data=await handle.readFile();if(data.length!==s.size)throw new Error('Source changed during fingerprint');}finally{await handle.close();}hash.update(rel+'\0'+data.length+'\0');hash.update(data);}}
+ async function walk(dir,relative=''){for(const name of (await readdir(dir)).sort()){if(++entries>50000)throw new Error('Workspace fingerprint exceeds entry limit');if(ignored.has(name))continue;const path=join(dir,name),rel=relative?`${relative}/${name}`:name,s=await lstat(path);if(s.isSymbolicLink()){const target=await readlink(path);hash.update('symlink\0'+rel+'\0'+target+'\0');continue;}if(s.isDirectory()){await walk(path,rel);continue;}if(!s.isFile())continue;if(++files>20000||s.size>32*1024*1024||(bytes+=s.size)>256*1024*1024)throw new Error('Workspace fingerprint exceeds source limits');const handle=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);let data;try{const actual=await handle.stat();if(!actual.isFile()||actual.size!==s.size)throw new Error('Source changed during fingerprint');data=await handle.readFile();if(data.length!==s.size)throw new Error('Source changed during fingerprint');}finally{await handle.close();}hash.update(rel+'\0'+data.length+'\0');hash.update(data);}}
  await walk(root);return hash.digest('hex');
 }
 function redact(s){return s.replace(/\bBearer\s+[^\s"']+/gi,'Bearer [REDACTED]').replace(/\b(?:sk-[\w-]{8,}|gh[pousr]_[\w]{8,})\b/g,'[REDACTED]').replace(/((?:api[_-]?key|access[_-]?token|secret)\s*[=:]\s*)[^\s,;"']+/gi,'$1[REDACTED]');}
