@@ -19,7 +19,7 @@
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+게이트웨이 연결 권한이 필요합니다. 실제 실행·로컬 도구 전달에는 켜진 실행기가 필요하며, agent_start에는 해당 CLI의 기존 로그인이 필요합니다. 상태 조회 자체는 모델을 호출하지 않습니다.
 
 ### 입력 전체
 
@@ -61,11 +61,11 @@ MCP 응답의 content와 isError를 확인합니다. ID·코드·세션·경로�
 
 ### 기능과 사용 시점
 
-로컬 실행기에 에이전트 작업 전달. 기본 읽기 전용.
+로컬 실행기에 역할별 에이전트 작업 전달. 기본 읽기 전용. role/name/phase는 4단계 모니터에 표시.
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+게이트웨이 연결 권한이 필요합니다. 실제 실행·로컬 도구 전달에는 켜진 실행기가 필요하며, agent_start에는 해당 CLI의 기존 로그인이 필요합니다. 상태 조회 자체는 모델을 호출하지 않습니다.
 
 ### 입력 전체
 
@@ -74,6 +74,9 @@ Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트�
 | provider | string | 예 | — | {"enum":["codex","claude"]} |
 | prompt | string | 예 | — | {"minLength":1,"maxLength":100000} |
 | cwd | string | 예 | — | {"minLength":1,"maxLength":4096} |
+| role | string | 아니오 | — | {"maxLength":80} |
+| name | string | 아니오 | — | {"maxLength":80} |
+| phase | string | 아니오 | — | {"enum":["planning","design","development","verification"]} |
 | mode | string | 아니오 | — | {"enum":["read-only","workspace-write"],"default":"read-only"} |
 | timeoutSeconds | integer | 아니오 | — | {"minimum":1,"maximum":600,"default":180} |
 
@@ -99,6 +102,23 @@ Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트�
       "type": "string",
       "minLength": 1,
       "maxLength": 4096
+    },
+    "role": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "design",
+        "development",
+        "verification"
+      ]
     },
     "mode": {
       "type": "string",
@@ -155,7 +175,7 @@ MCP 응답의 content와 isError를 확인합니다. ID·코드·세션·경로�
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+게이트웨이 연결 권한이 필요합니다. 실제 실행·로컬 도구 전달에는 켜진 실행기가 필요하며, agent_start에는 해당 CLI의 기존 로그인이 필요합니다. 상태 조회 자체는 모델을 호출하지 않습니다.
 
 ### 입력 전체
 
@@ -209,7 +229,7 @@ MCP 응답의 content와 isError를 확인합니다. ID·코드·세션·경로�
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+게이트웨이 연결 권한이 필요합니다. 실제 실행·로컬 도구 전달에는 켜진 실행기가 필요하며, agent_start에는 해당 CLI의 기존 로그인이 필요합니다. 상태 조회 자체는 모델을 호출하지 않습니다.
 
 ### 입력 전체
 
@@ -263,7 +283,7 @@ MCP 응답의 content와 isError를 확인합니다. ID·코드·세션·경로�
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+게이트웨이 연결 권한이 필요합니다. 실제 실행·로컬 도구 전달에는 켜진 실행기가 필요하며, agent_start에는 해당 CLI의 기존 로그인이 필요합니다. 상태 조회 자체는 모델을 호출하지 않습니다.
 
 ### 입력 전체
 
@@ -317,7 +337,7 @@ MCP 응답의 content와 isError를 확인합니다. ID·코드·세션·경로�
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+게이트웨이 연결 권한이 필요합니다. 실제 실행·로컬 도구 전달에는 켜진 실행기가 필요하며, agent_start에는 해당 CLI의 기존 로그인이 필요합니다. 상태 조회 자체는 모델을 호출하지 않습니다.
 
 ### 입력 전체
 

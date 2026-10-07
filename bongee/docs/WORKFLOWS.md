@@ -1,6 +1,6 @@
 # 실제 작업 순서와 운영 방법
 
-[전체 416개 도구 상세 설명](MANUAL.md) · [설치](../README.md)
+[전체 417개 도구 상세 설명](MANUAL.md) · [설치](../README.md) · [세션 하단 상태 표시](STATUS-DISPLAY.md)
 
 ## 1. 설치 후 첫 실행
 

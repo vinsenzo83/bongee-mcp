@@ -9,6 +9,7 @@
 - [bongee_agent_result](#bongee_agent_result)
 - [bongee_agent_cancel](#bongee_agent_cancel)
 - [bongee_agent_list](#bongee_agent_list)
+- [bongee_monitor_status](#bongee_monitor_status)
 
 ## bongee_baton_status
 
@@ -64,7 +65,7 @@ Check existing Codex and Claude CLI login. No API credentials returned.
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+로컬 실행 기록/프로세스를 읽습니다. 조회 자체에는 AI API 키나 모델 호출이 필요하지 않습니다. provider_status는 CLI 설치·로그인 상태를 확인합니다.
 
 ### 입력 전체
 
@@ -104,11 +105,11 @@ MCP 응답의 content와 isError를 확인합니다. ID·코드·세션·경로�
 
 ### 기능과 사용 시점
 
-Execute a real Codex or Claude CLI agent with existing login. Default read-only. Poll status/result. New CLI session, not a copy of this conversation.
+Execute a real Codex or Claude CLI agent with existing login. Default read-only. Poll status/result. New CLI session, not a copy of this conversation. Optional role/name/phase appear in the live four-stage monitor.
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+Codex 또는 Claude CLI 설치와 기존 로그인이 필요합니다.
 
 ### 입력 전체
 
@@ -117,6 +118,9 @@ Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트�
 | provider | string | 예 | — | {"enum":["codex","claude"]} |
 | prompt | string | 예 | — | {"maxLength":100000} |
 | cwd | string | 예 | — | — |
+| role | string | 아니오 | Agent role, e.g. planner, designer, developer, tester, reviewer | {"maxLength":80} |
+| name | string | 아니오 | Short display name; do not include secrets | {"maxLength":80} |
+| phase | string | 아니오 | Display stage; does not automatically run a pipeline | {"enum":["planning","design","development","verification"]} |
 | mode | string | 아니오 | — | {"enum":["read-only","workspace-write"],"default":"read-only"} |
 | timeoutSeconds | integer | 아니오 | — | {"minimum":1,"maximum":600} |
 
@@ -139,6 +143,26 @@ Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트�
     },
     "cwd": {
       "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Agent role, e.g. planner, designer, developer, tester, reviewer"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Short display name; do not include secrets"
+    },
+    "phase": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "design",
+        "development",
+        "verification"
+      ],
+      "description": "Display stage; does not automatically run a pipeline"
     },
     "mode": {
       "type": "string",
@@ -193,7 +217,7 @@ Read actual agent execution state.
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+로컬 실행 기록/프로세스를 읽습니다. 조회 자체에는 AI API 키나 모델 호출이 필요하지 않습니다. provider_status는 CLI 설치·로그인 상태를 확인합니다.
 
 ### 입력 전체
 
@@ -246,7 +270,7 @@ Read actual final response and session ID; unfinished is not completed.
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+로컬 실행 기록/프로세스를 읽습니다. 조회 자체에는 AI API 키나 모델 호출이 필요하지 않습니다. provider_status는 CLI 설치·로그인 상태를 확인합니다.
 
 ### 입력 전체
 
@@ -299,7 +323,7 @@ Stop a session-agent process group.
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+로컬 실행 기록/프로세스를 읽습니다. 조회 자체에는 AI API 키나 모델 호출이 필요하지 않습니다. provider_status는 CLI 설치·로그인 상태를 확인합니다.
 
 ### 입력 전체
 
@@ -352,7 +376,7 @@ List session executions.
 
 ### 연결·실행 조건
 
-Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트웨이 연결 권한과 켜진 로컬 실행기가 필요합니다. 읽기 조회에는 모델 실행이 필요하지 않을 수 있습니다.
+로컬 실행 기록/프로세스를 읽습니다. 조회 자체에는 AI API 키나 모델 호출이 필요하지 않습니다. provider_status는 CLI 설치·로그인 상태를 확인합니다.
 
 ### 입력 전체
 
@@ -376,6 +400,55 @@ Codex 또는 Claude CLI 설치와 기존 로그인. remote 도구는 게이트�
 ```json
 {
   "name": "bongee_agent_list",
+  "arguments": {}
+}
+```
+
+### 결과 확인과 오류 대응
+
+MCP 응답의 content와 isError를 확인합니다. ID·코드·세션·경로를 반환하면 실제 응답 값을 후속 도구에 전달합니다. 실패 시 필수 입력, 앞 단계의 상태, 선택적 패키지, 외부 연결·권한을 순서대로 확인합니다. 쓰기·명령·배포·전송 작업은 이미 반영됐을 수 있으므로 오류만으로 자동 재시도하지 마세요.
+
+서버 카탈로그에 고정 출력 스키마가 제공되지 않았습니다. 기능별 실제 출력과 성공 조건은 원본 구현/실제 응답을 확인해야 하며, 이 항목은 개별 동작 시험 완료를 뜻하지 않습니다.
+
+## bongee_monitor_status
+
+출처: Bongee 추가
+
+### 기능과 사용 시점
+
+Read actual role-based agent states grouped into planning, design, development and verification. Includes original agent_execute observations and distinguishes unobserved registry state. No model calls.
+
+### 연결·실행 조건
+
+로컬 실행 기록/프로세스를 읽습니다. 조회 자체에는 AI API 키나 모델 호출이 필요하지 않습니다. provider_status는 CLI 설치·로그인 상태를 확인합니다.
+
+### 입력 전체
+
+| 필드 | 자료형 | 필수 | 설명 | 선택값·기본값·제약 |
+|---|---|---|---|---|
+| cwd | string | 아니오 | Project absolute path. Default MCP working directory. | — |
+
+전체 스키마(분기·패턴·추가 속성 규칙 포함):
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cwd": {
+      "type": "string",
+      "description": "Project absolute path. Default MCP working directory."
+    }
+  }
+}
+```
+
+### 호출 예시
+
+아래는 필수 입력 중심의 호출 틀입니다. 자리표시자를 실제 작업 값으로 교체하고, 중첩 객체·동작별 추가 요건은 위 설명과 스키마에 따라 채우세요. 이 예시는 자동 실행하지 않습니다.
+
+```json
+{
+  "name": "bongee_monitor_status",
   "arguments": {}
 }
 ```

@@ -4,6 +4,8 @@
 
 ## 세션 실행 도구 전체
 
+기획자·개발자·테스터·리뷰어 역할과 4단계 상태줄 설치는 [하단 상태 표시 설명서](STATUS-DISPLAY.md)를 따릅니다. `bongee_agent_start`에 선택 입력 role/name/phase를 지정할 수 있으며, `bongee_monitor_status`에 프로젝트 cwd를 넣으면 실제 역할별 상태를 조회합니다.
+
 | 도구 | 기능 | 입력 |
 |---|---|---|
 | bongee_provider_status | Codex·Claude 로그인 확인 | 없음 |
@@ -13,6 +15,7 @@
 | bongee_agent_cancel | 실행 프로세스 중단 | id |
 | bongee_agent_list | 작업 목록 조회 | 없음 |
 | bongee_baton_status | BATON 연결·도구 노출 상태 | 없음 |
+| bongee_monitor_status | 4단계·역할별 실제 실행 상태 | cwd 선택 |
 
 provider는 `codex` 또는 `claude`, cwd는 프로젝트 절대 경로입니다. mode는 기본 `read-only`, 파일 수정 시 `workspace-write`를 명시합니다. timeoutSeconds는 기본 180초, 최대 600초입니다. 프로세스당 동시 실행은 2개입니다. 새 에이전트는 현재 대화를 자동으로 전달받지 않습니다. 목표·제약·프로젝트 경로를 prompt에 넣으세요.
 

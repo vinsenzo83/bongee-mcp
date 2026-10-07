@@ -4,10 +4,11 @@ import {Server} from '@modelcontextprotocol/sdk/server/index.js';
 import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {CallToolRequestSchema,ListToolsRequestSchema} from '@modelcontextprotocol/sdk/types.js';
 import {pathToFileURL} from 'node:url';
+import {validateLabels,phaseFor} from './monitor-state.mjs';
 
 const schema=(properties={},required=[])=>({type:'object',properties,required,additionalProperties:false});
 const idSchema=schema({id:{type:'string'}},['id']);
-const tools=[{name:'provider_status',description:'로컬 실행기의 기존 CLI 로그인 상태',inputSchema:schema()},{name:'agent_start',description:'로컬 실행기에 에이전트 작업 전달. 기본 읽기 전용.',inputSchema:schema({provider:{type:'string',enum:['codex','claude']},prompt:{type:'string',minLength:1,maxLength:100000},cwd:{type:'string',minLength:1,maxLength:4096},mode:{type:'string',enum:['read-only','workspace-write'],default:'read-only'},timeoutSeconds:{type:'integer',minimum:1,maximum:600,default:180}},['provider','prompt','cwd'])},...['agent_status','agent_result','agent_cancel'].map(name=>({name,description:'로컬 에이전트 상태·결과·취소',inputSchema:idSchema})),{name:'agent_list',description:'현재 서버의 최근 작업 목록',inputSchema:schema()}];
+const tools=[{name:'provider_status',description:'로컬 실행기의 기존 CLI 로그인 상태',inputSchema:schema()},{name:'agent_start',description:'로컬 실행기에 역할별 에이전트 작업 전달. 기본 읽기 전용. role/name/phase는 4단계 모니터에 표시.',inputSchema:schema({provider:{type:'string',enum:['codex','claude']},prompt:{type:'string',minLength:1,maxLength:100000},cwd:{type:'string',minLength:1,maxLength:4096},role:{type:'string',maxLength:80},name:{type:'string',maxLength:80},phase:{type:'string',enum:['planning','design','development','verification']},mode:{type:'string',enum:['read-only','workspace-write'],default:'read-only'},timeoutSeconds:{type:'integer',minimum:1,maximum:600,default:180}},['provider','prompt','cwd'])},...['agent_status','agent_result','agent_cancel'].map(name=>({name,description:'로컬 에이전트 상태·결과·취소',inputSchema:idSchema})),{name:'agent_list',description:'현재 서버의 최근 작업 목록',inputSchema:schema()}];
 export function createGateway({token=process.env.BONGEE_GATEWAY_TOKEN,clock=Date.now}={}){
  if(typeof token!=='string'||token.length<32)throw Error('BONGEE_GATEWAY_TOKEN must have at least 32 characters');
  const app=express(),jobs=new Map();let runner={lastSeen:0,providers:[],catalog:[]};
@@ -30,11 +31,11 @@ export function createGateway({token=process.env.BONGEE_GATEWAY_TOKEN,clock=Date
   if(name==='agent_list')return [...jobs.values()].map(summary);
   if(name==='agent_start'){
    if(!connected())throw Error('Local runner is disconnected');
-   const {provider,prompt,cwd,mode='read-only',timeoutSeconds=180}=args;
+   const {provider,prompt,cwd,mode='read-only',timeoutSeconds=180}=args;const labels=validateLabels(args);
    if(!['codex','claude'].includes(provider)||!['read-only','workspace-write'].includes(mode)||typeof prompt!=='string'||!prompt.trim()||prompt.length>100000||typeof cwd!=='string'||!cwd.startsWith('/')||cwd.length>4096||!Number.isInteger(timeoutSeconds)||timeoutSeconds<1||timeoutSeconds>600)throw Error('Invalid agent input');
    if(!runner.providers.some(p=>p.provider===provider&&p.authenticated===true))throw Error('Provider CLI login is required');
    if([...jobs.values()].filter(j=>['queued','running'].includes(j.status)).length>=20)throw Error('Agent queue is full');
-   const job={id:randomUUID(),status:'queued',provider,mode,cwd,startedAt:new Date(clock()).toISOString(),input:{provider,prompt,cwd,mode,timeoutSeconds}};jobs.set(job.id,job);trim();return summary(job);
+   const job={id:randomUUID(),status:'queued',provider,mode,cwd,...labels,phase:labels.phase||phaseFor(labels.role),startedAt:new Date(clock()).toISOString(),input:{provider,prompt,cwd,mode,timeoutSeconds,...labels}};jobs.set(job.id,job);trim();return summary(job);
   }
   const job=get(args.id);
   if(name==='agent_status')return summary(job);

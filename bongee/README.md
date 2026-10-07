@@ -23,7 +23,11 @@ claude mcp add --scope user bongee -- node /absolute/path/bongee-mcp/bongee/prox
 
 ## 기능
 
-상세 실행 순서는 [사용 설명서](docs/USAGE.md)와 [작업별 예제](docs/WORKFLOWS.md)를 보세요. **원본 358개를 포함한 전체 416개 도구의 개별 설명·모든 입력 스키마·호출 예시**는 [상세 기능 매뉴얼](docs/MANUAL.md)에 있습니다. 원본 이름·입력 스키마 대조 결과 누락 0개·변경 0개입니다. 기능별 실제 실행 검증 범위와는 구분합니다.
+상세 실행 순서는 [사용 설명서](docs/USAGE.md)와 [작업별 예제](docs/WORKFLOWS.md)를 보세요. **원본 358개를 포함한 전체 417개 도구의 개별 설명·모든 입력 스키마·호출 예시**는 [상세 기능 매뉴얼](docs/MANUAL.md)에 있습니다. 원본 이름·입력 스키마 대조 결과 누락 0개·변경 0개입니다. 기능별 실제 실행 검증 범위와는 구분합니다.
+
+### 세션 하단 역할별 상태
+
+**기획 → 설계·디자인 → 개발 → 검증**으로 실제 역할의 상태를 표시합니다. Claude Code 하단은 `npm run statusline:install`로 연결하며 기존 상태줄을 보존합니다. Codex는 별도 분할 터미널에서 `node monitor.mjs --watch --cwd /프로젝트/절대경로`로 확인합니다. `bongee_monitor_status`로도 조회할 수 있습니다. [하단 표시 설치·예시·복구·관찰 범위](docs/STATUS-DISPLAY.md).
 
 - Ruflo 원본 도구358개와 전체 원본 코드 보존. 등록은 모든 도구가 설정·검증 완료됐다는 뜻이 아닙니다.
 - `bongee_agent_start/status/result/cancel/list`, `bongee_provider_status`: Codex·Claude 세션 실행·조회. 기본 읽기 전용, 실행 프로세스당 동시2개, 제한시간 기본180초.

@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-07T11:46:05.911Z",
+  "capturedAt": "2026-10-07T12:10:44.893Z",
   "source": "MCP tools/list (read-only)",
   "tools": [
     {
@@ -9005,7 +9005,7 @@
     },
     {
       "name": "bongee_agent_start",
-      "description": "Execute a real Codex or Claude CLI agent with existing login. Default read-only. Poll status/result. New CLI session, not a copy of this conversation.",
+      "description": "Execute a real Codex or Claude CLI agent with existing login. Default read-only. Poll status/result. New CLI session, not a copy of this conversation. Optional role/name/phase appear in the live four-stage monitor.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -9022,6 +9022,26 @@
           },
           "cwd": {
             "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Agent role, e.g. planner, designer, developer, tester, reviewer"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "description": "Short display name; do not include secrets"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "planning",
+              "design",
+              "development",
+              "verification"
+            ],
+            "description": "Display stage; does not automatically run a pipeline"
           },
           "mode": {
             "type": "string",
@@ -9095,6 +9115,19 @@
       "inputSchema": {
         "type": "object",
         "properties": {}
+      }
+    },
+    {
+      "name": "bongee_monitor_status",
+      "description": "Read actual role-based agent states grouped into planning, design, development and verification. Includes original agent_execute observations and distinguishes unobserved registry state. No model calls.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cwd": {
+            "type": "string",
+            "description": "Project absolute path. Default MCP working directory."
+          }
+        }
       }
     },
     {
@@ -10619,7 +10652,7 @@
     },
     {
       "name": "bongee_remote_agent_start",
-      "description": "로컬 실행기에 에이전트 작업 전달. 기본 읽기 전용.",
+      "description": "로컬 실행기에 역할별 에이전트 작업 전달. 기본 읽기 전용. role/name/phase는 4단계 모니터에 표시.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -10639,6 +10672,23 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 4096
+          },
+          "role": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "planning",
+              "design",
+              "development",
+              "verification"
+            ]
           },
           "mode": {
             "type": "string",

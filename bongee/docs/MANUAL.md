@@ -1,8 +1,8 @@
 # 전체 기능 상세 매뉴얼
 
-카탈로그 수집: 2026-10-07T11:46:05.911Z. 전체 **416개**: Ruflo 원본 **358개**, Bongee 7개, BATON 45개, 원격 관리 6개. 원본 이름·입력 스키마 대조: 누락 0개, 변경 0개.
+카탈로그 수집: 2026-10-07T12:10:44.893Z. 전체 **417개**: Ruflo 원본 **358개**, Bongee 8개, BATON 45개, 원격 관리 6개. 원본 이름·입력 스키마 대조: 누락 0개, 변경 0개.
 
-[설치·기본 사용](USAGE.md) · [작업 순서 예제](WORKFLOWS.md) · [전체 JSON 스키마](tool-catalog.json) · [대조 근거](catalog-parity.json)
+[설치·기본 사용](USAGE.md) · [작업 순서 예제](WORKFLOWS.md) · [하단 상태 표시](STATUS-DISPLAY.md) · [전체 JSON 스키마](tool-catalog.json) · [대조 근거](catalog-parity.json)
 
 각 항목에 실제 도구 설명, 모든 입력 필드(중첩 포함), 전체 JSON 스키마, 필수 입력 호출 틀, 연결 조건을 수록했습니다. 원본 영어 설명은 의미를 보존하기 위해 그대로 병기합니다. 예시는 문서용 자리표시자이며 실제 실행 결과나 검증 성공을 뜻하지 않습니다. enum/범위/분기 조건은 전체 스키마가 최종 기준입니다.
 
@@ -51,7 +51,7 @@
 | 사업 Pod 검증·백엔드 선택 | 2 | [business](reference/business.md) |
 | HTTP 요청 | 1 | [http](reference/http.md) |
 | 미션 계획·행동 요청 | 5 | [mission](reference/mission.md) |
-| Bongee 로그인 세션 실행 | 7 | [bongee](reference/bongee.md) |
+| Bongee 로그인 세션 실행 | 8 | [bongee](reference/bongee.md) |
 | BATON 암호화 인계·팀·계정 | 39 | [baton](reference/baton.md) |
 | BATON 검증 계획·신호 | 6 | [spider](reference/spider.md) |
 | 원격 실행기 관리 | 6 | [remote](reference/remote.md) |
@@ -423,6 +423,7 @@
 - [bongee_agent_result](reference/bongee.md#bongee_agent_result)
 - [bongee_agent_cancel](reference/bongee.md#bongee_agent_cancel)
 - [bongee_agent_list](reference/bongee.md#bongee_agent_list)
+- [bongee_monitor_status](reference/bongee.md#bongee_monitor_status)
 - [baton_create_room](reference/baton.md#baton_create_room)
 - [baton_new_invite](reference/baton.md#baton_new_invite)
 - [baton_join](reference/baton.md#baton_join)
