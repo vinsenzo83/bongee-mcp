@@ -11,18 +11,18 @@ export function safeEnv(source=process.env){
  return Object.fromEntries(keys.filter(k=>typeof source[k]==='string').map(k=>[k,source[k]]));
 }
 export function ownerIsAlive(pid){if(!Number.isInteger(pid)||pid<=0)return false;try{process.kill(pid,0);return true;}catch(error){return error.code==='EPERM';}}
-export function command(provider,{prompt,cwd,mode}){
- if(provider==='codex')return ['codex',['exec','--json','--skip-git-repo-check','--sandbox',mode,'--ignore-user-config','-C',cwd,'-']];
+export function command(provider,{prompt,cwd,mode,schemaPath,resultSchema}){
+ if(provider==='codex')return ['codex',['exec','--json','--skip-git-repo-check','--sandbox',mode,'--ignore-user-config',...(schemaPath?['--output-schema',schemaPath]:[]),'-C',cwd,'-']];
  const tools=mode==='read-only'?'Read,Glob,Grep':'Read,Glob,Grep,Edit,Write';
- return ['claude',['-p','--output-format','stream-json','--verbose','--safe-mode','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--permission-mode','default','--tools',tools,...(mode==='workspace-write'?['--allowedTools',tools]:[])]];
+ return ['claude',['-p','--output-format','stream-json','--verbose','--safe-mode','--strict-mcp-config','--mcp-config','{"mcpServers":{}}','--permission-mode','default','--tools',tools,...(mode==='workspace-write'?['--allowedTools',tools]:[]),...(resultSchema?['--json-schema',JSON.stringify(resultSchema)]:[])]];
 }
 export function eventParser(provider,job,maxResult=65536){
  let pending='',discarding=false,completed=false,failed=false;
  const event=line=>{try{const e=JSON.parse(line);job.lastEventAt=new Date().toISOString();if(typeof e.thread_id==='string')job.sessionId=e.thread_id;if(typeof e.session_id==='string')job.sessionId=e.session_id;
   if(provider==='codex'){const activities={command_execution:'명령 실행',file_change:'파일 변경',agent_message:'응답 작성',reasoning:'분석 중',mcp_tool_call:'MCP 호출',web_search:'검색 중'};if(activities[e.item?.type])job.activity=activities[e.item.type];else if(e.type==='turn.started')job.activity='분석 중';}
   else if(e.type==='assistant')job.activity=e.message?.content?.some(c=>c.type==='tool_use')?'도구 호출':'응답 작성';
-  if(provider==='codex'){if(e.type==='error'||e.type==='turn.failed')failed=true;if(e.type==='item.completed'&&e.item?.type==='agent_message'&&typeof e.item.text==='string')job.finalResult=e.item.text.slice(0,maxResult);if(e.type==='turn.completed')completed=true;}
-  else if(e.type==='result'){if(e.is_error===true||e.subtype!=='success')failed=true;else{completed=true;if(typeof e.result==='string')job.finalResult=e.result.slice(0,maxResult);}}
+  if(provider==='codex'){if(e.type==='error'||e.type==='turn.failed')failed=true;if(e.type==='item.completed'&&e.item?.type==='agent_message'&&typeof e.item.text==='string'){job.finalResult=e.item.text.slice(0,maxResult);if(e.item.text.length>maxResult)job.resultTruncated=true;}if(e.type==='turn.completed')completed=true;}
+  else if(e.type==='result'){if(e.is_error===true||e.subtype!=='success')failed=true;else{completed=true;const final=e.structured_output!==undefined?JSON.stringify(e.structured_output):e.result;if(typeof final==='string'){job.finalResult=final.slice(0,maxResult);if(final.length>maxResult)job.resultTruncated=true;}}}
  }catch{}};
  return {push(chunk){for(const fragment of chunk.toString().split(/(?<=\n)/)){const newline=fragment.endsWith('\n');if(!discarding){pending+=fragment;if(pending.length>1024*1024){pending='';discarding=true;}}if(newline){if(!discarding)event(pending);pending='';discarding=false;}}},finish(){if(pending&&!discarding)event(pending);return completed&&!failed;}};
 }
@@ -45,18 +45,21 @@ export class AgentManager {
  });}
  async providerStatus(){return Promise.all(['codex','claude'].map(p=>this.authCheck(p)));}
  async start(input){const previous=this.startQueue;let release;this.startQueue=new Promise(r=>release=r);await previous;try{return await this.startLocked(input);}finally{release();}}
- async startLocked({provider,prompt,cwd,mode='read-only',timeoutSeconds=180,role,name,phase}){
+ async startLocked({provider,prompt,cwd,mode='read-only',timeoutSeconds=180,role,name,phase,pipelineId,resultSchema}){
   await this.ready;if(!['codex','claude'].includes(provider)||!['read-only','workspace-write'].includes(mode))throw Error('Invalid provider or mode');
   if(typeof prompt!=='string'||!prompt.trim()||prompt.length>100000)throw Error('Prompt must contain 1 to 100000 characters');
   if(typeof cwd!=='string'||!cwd.trim())throw Error('Working directory is required');
   const directory=resolve(cwd);try{if(!(await stat(directory)).isDirectory())throw Error();}catch{throw Error('Working directory does not exist');}
   if(!Number.isInteger(timeoutSeconds)||timeoutSeconds<1||timeoutSeconds>600)throw Error('Timeout must be 1 to 600 seconds');
   const labels=validateLabels({role,name,phase});
+  if(pipelineId!==undefined&&(typeof pipelineId!=='string'||!/^[\w-]{1,100}$/.test(pipelineId)))throw Error('Invalid pipeline ID');
+  if(resultSchema!==undefined&&(!resultSchema||typeof resultSchema!=='object'||resultSchema.type!=='object'||JSON.stringify(resultSchema).length>32768))throw Error('Invalid result schema');
   if(this.running.size>=this.maxConcurrent)throw Error('Concurrent agent limit reached');
   const auth=await this.authCheck(provider);if(!auth.available||!auth.authenticated)throw Error('Provider CLI login is required');
-  const job={id:randomUUID(),provider,cwd:directory,mode,...labels,phase:phase||phaseFor(role),status:'running',activity:'시작 중',ownerPid:process.pid,startedAt:new Date().toISOString(),output:'',truncated:false};
+  const job={id:randomUUID(),provider,cwd:directory,mode,...labels,...(pipelineId?{pipelineId}:{}),phase:phase||phaseFor(role),status:'running',activity:'시작 중',ownerPid:process.pid,startedAt:new Date().toISOString(),output:'',truncated:false};
+  let schemaPath;if(resultSchema){const directory=join(this.stateDir,'schemas');await mkdir(directory,{recursive:true,mode:0o700});schemaPath=join(directory,job.id+'.json');await writeFile(schemaPath,JSON.stringify(resultSchema),{mode:0o600});}
   this.jobs.set(job.id,job);this.owned.add(job.id);try{await this.persist(job);}catch{Object.assign(job,{status:'failed',reason:'Unable to persist agent state',persistenceError:true,finishedAt:new Date().toISOString()});throw Error('Unable to persist agent state');}
-  const [binary,args]=command(provider,{prompt,cwd:directory,mode});let child;
+  const [binary,args]=command(provider,{prompt,cwd:directory,mode,schemaPath,resultSchema});let child;
   try{child=this.runner(binary,args,{cwd:directory,env:safeEnv(),shell:false,detached:true,stdio:['pipe','pipe','pipe']});}catch{job.status='failed';job.reason='Unable to start provider';job.finishedAt=new Date().toISOString();try{await this.persist(job);}catch{job.persistenceError=true;}return this.status(job.id);}
   const parser=eventParser(provider,job,this.maxOutput),decoder=new StringDecoder('utf8');const handle={child,timer:null,settled:false};this.running.set(job.id,handle);
   let persisting=false;handle.progressTimer=setInterval(async()=>{if(persisting||handle.settled)return;persisting=true;try{await this.persist(job);}catch{job.persistenceError=true;}finally{persisting=false;}},1000);handle.progressTimer.unref();
