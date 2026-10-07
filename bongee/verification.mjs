@@ -5,6 +5,8 @@ import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {StringDecoder} from 'node:string_decoder';
 import {safeEnv} from './core.mjs';
+import {fileURLToPath} from 'node:url';
+import {processIdentity} from './session-supervisor.mjs';
 
 const controls=/[\x00-\x1f\x7f]/;
 export function validateChecks(checks){
@@ -38,6 +40,6 @@ export class VerificationRunner{
  const kill=()=>{if(!child?.pid)return;try{process.kill(-child.pid,'SIGTERM');}catch{child.kill('SIGTERM');}killTimer=setTimeout(()=>{try{process.kill(-child.pid,'SIGKILL');}catch{child.kill('SIGKILL');}},250);};
  const abort=()=>{status='cancelled';kill();};
  const done=(code,error)=>{if(finished)return;finished=true;clearTimeout(timer);if(status&&child?.pid){try{process.kill(-child.pid,'SIGKILL');}catch{}}clearTimeout(killTimer);signal?.removeEventListener('abort',abort);for(const key of ['stdout','stderr']){const tail=decoder[key].end();if(tail&&count+Buffer.byteLength(tail)<=this.maxOutput){output[key]+=tail;count+=Buffer.byteLength(tail);}}if(error&&count<this.maxOutput)output.stderr+=(error.message||String(error)).slice(0,this.maxOutput-count);resolve({...c,status:status||(code===0&&!error?'passed':'failed'),exitCode:Number.isInteger(code)?code:null,durationMs:Date.now()-start,stdout:redact(output.stdout),stderr:redact(output.stderr),truncated});};
- if(signal?.aborted){status='cancelled';done(null);return;}try{child=this.runner(c.command,c.args,{cwd,env:safeEnv(),shell:false,detached:true,stdio:['ignore','pipe','pipe']});child.stdout?.on('data',d=>append('stdout',d));child.stderr?.on('data',d=>append('stderr',d));child.once('error',e=>done(null,e));child.once('close',code=>done(code));signal?.addEventListener('abort',abort,{once:true});timer=setTimeout(()=>{status='timed-out';kill();},this.timeoutSeconds*1000);if(signal?.aborted)abort();}catch(e){done(null,e);}
+ if(signal?.aborted){status='cancelled';done(null);return;}try{const identity=this.runner===spawn?processIdentity(process.pid):null;if(this.runner===spawn&&!identity)throw new Error('Cannot verify owner process identity');const binary=this.runner===spawn?process.execPath:c.command,args=this.runner===spawn?[fileURLToPath(new URL('./session-supervisor.mjs',import.meta.url)),'--owner',String(process.pid),'--owner-identity',identity,'--job',c.id,'--',c.command,...c.args]:c.args;child=this.runner(binary,args,{cwd,env:safeEnv(),shell:false,detached:true,stdio:['ignore','pipe','pipe']});child.stdout?.on('data',d=>append('stdout',d));child.stderr?.on('data',d=>append('stderr',d));child.once('error',e=>done(null,e));child.once('close',code=>done(code));signal?.addEventListener('abort',abort,{once:true});timer=setTimeout(()=>{status='timed-out';kill();},this.timeoutSeconds*1000);if(signal?.aborted)abort();}catch(e){done(null,e);}
  });}
 }
