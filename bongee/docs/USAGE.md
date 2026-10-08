@@ -1,6 +1,6 @@
 # bongee 사용 설명서
 
-설치·등록은 [README](../README.md)를 따릅니다. [전체 416개 도구 상세 매뉴얼](MANUAL.md)과 [작업별 실행 순서](WORKFLOWS.md)도 함께 제공됩니다. 등록 후 Codex 또는 Claude를 재시작하거나 새 대화를 열고 `bongee 연결 상태와 로그인 상태를 확인해`라고 요청합니다. 모델 실행에는 해당 CLI의 기존 로그인이 필요합니다.
+설치·등록은 [README](../README.md)를 따릅니다. [전체 도구 상세 매뉴얼](MANUAL.md)과 [작업별 실행 순서](WORKFLOWS.md)도 함께 제공됩니다. 등록 후 Codex 또는 Claude를 재시작하거나 새 대화를 열고 `bongee 연결 상태와 로그인 상태를 확인해`라고 요청합니다. 모델 실행에는 해당 CLI의 기존 로그인이 필요합니다.
 
 ## 세션 실행 도구 전체
 
@@ -53,9 +53,9 @@ start가 반환한 id로 status/result를 조회합니다. 작업 시작은 완�
 
 ## 원격 실행
 
-[주소 설치 안내](URL-INSTALL.md)를 따라 MCP 주소를 등록하고 브라우저 연결을 허용합니다. 토큰 복사 없이 자동 인증됩니다. 새로운 사용자는 개인 실행기 연결 ZIP을 실행해 자신의 PC를 연결합니다. 로컬 runner가 켜져 있어야 실제 작업을 실행할 수 있습니다. 사용자별 작업과 실행기는 분리됩니다.
+[주소 설치 안내](URL-INSTALL.md)를 따라 MCP 주소를 등록하고 브라우저 연결을 허용합니다. 토큰 복사 없이 자동 인증됩니다. 새 사용자는 연결한 Codex·Claude Code 세션에 “Bongee 자동 준비 후 작업해”라고 요청합니다. 세션이 `bongee_auto_setup`으로 준비 명령을 받아 자신의 터미널에서 실행하고 실행기 응답을 확인합니다. 수동 ZIP 다운로드는 기본 설치 단계에 없습니다. Node.js 20 이상과 호스트 터미널 사용이 필요하며 앱의 실행 승인 정책을 따릅니다. 로컬 runner가 켜져 있어야 실제 작업을 실행할 수 있습니다. 사용자별 작업과 실행기는 분리됩니다.
 
-원격 전용 도구는 `bongee_remote_provider_status`, `bongee_remote_agent_start`, `bongee_remote_agent_status`, `bongee_remote_agent_result`, `bongee_remote_agent_cancel`, `bongee_remote_agent_list` 6개입니다. start의 입력은 위 세션 실행과 같으며 cwd는 실행기 PC의 경로입니다. 상태·결과·중단에는 반환된 id를 사용합니다. 긴 원본 호출이 대기 ID를 반환하면 remote_agent_result로 확인합니다. 서버 재시작 시 원격 작업 기록은 초기화됩니다.
+원격 전용 도구는 `bongee_remote_provider_status`, `bongee_remote_agent_start`, `bongee_remote_agent_status`, `bongee_remote_agent_result`, `bongee_remote_agent_cancel`, `bongee_remote_agent_list` 6개와 자동 준비 도구 `bongee_auto_setup`입니다. start의 입력은 위 세션 실행과 같으며 cwd는 실행기 PC의 경로입니다. 상태·결과·중단에는 반환된 id를 사용합니다. 긴 원본 호출이 대기 ID를 반환하면 remote_agent_result로 확인합니다. 서버 재시작 시 원격 작업 기록은 초기화됩니다.
 
 ## 검증 명령
 
