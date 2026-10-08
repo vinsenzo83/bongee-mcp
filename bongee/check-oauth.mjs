@@ -4,6 +4,7 @@ import {InMemoryOAuthClientProvider} from '@modelcontextprotocol/sdk/examples/cl
 import {UnauthorizedError} from '@modelcontextprotocol/sdk/client/auth.js';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';import {homedir} from 'node:os';
+import {spawn} from 'node:child_process';
 
 const endpoint=new URL(process.env.BONGEE_CHECK_URL||'https://bongee-production.up.railway.app/mcp');
 let cookie='';
@@ -24,6 +25,7 @@ client=new Client({name:'bongee-oauth-check',version:'0.3.0'});transport=new Str
 try{
  const tools=(await client.listTools()).tools,stateReply=await client.callTool({name:'bongee_remote_provider_status',arguments:{}});if(stateReply.isError)throw Error('Provider status failed');const state=JSON.parse(stateReply.content[0].text);
  const evidence={endpoint:endpoint.href,urlOnlyOAuth:true,tokenCopied:false,tools:tools.length,runnerConnected:state.connected,providers:state.providers,owner:process.argv.includes('--owner')};
+ if(process.argv.includes('--auto-install')){const setup=JSON.parse((await client.callTool({name:'bongee_auto_setup',arguments:{}})).content[0].text);if(!setup.ready){if(typeof setup.command!=='string'||!/^curl -fsS 'https:\/\/bongee-production\.up\.railway\.app\/install\/session\/[A-Za-z0-9_-]{43}' \| node --input-type=module$/.test(setup.command))throw Error('Unexpected automatic setup command');console.log('Automatic session preparation started; no manual ZIP or token input.');const code=await new Promise((resolve,reject)=>{const child=spawn('bash',['-c',setup.command],{stdio:['ignore','inherit','inherit']});child.once('error',reject);child.once('close',resolve);});if(code!==0)throw Error('Automatic session setup failed');}const readyReply=await client.callTool({name:'bongee_auto_setup',arguments:{}});const readiness=JSON.parse(readyReply.content[0].text);if(readiness.ready!==true)throw Error('Automatic setup has not connected');evidence.automaticExecutorInstalled=true;evidence.runnerConnected=true;const original=await client.callTool({name:'system_status',arguments:{verbose:false}});if(original.isError)throw Error('New executor tool forwarding failed');evidence.originalToolExecuted=true;}
  if(evidence.owner){const reply=await client.callTool({name:'system_status',arguments:{verbose:false}});evidence.originalToolExecuted=!reply.isError;if(reply.isError)throw Error('OAuth owner forwarding failed');}
  console.log(JSON.stringify(evidence));await mkdir(new URL('./output/',import.meta.url),{recursive:true});await writeFile(new URL('./output/oauth-check-'+(evidence.owner?'owner':'guest')+'.json',import.meta.url),JSON.stringify(evidence,null,2));
 }finally{await client.close();}

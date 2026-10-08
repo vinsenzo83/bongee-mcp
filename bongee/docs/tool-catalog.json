@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-10-07T13:45:13.211Z",
+  "capturedAt": "2026-10-08T08:16:06.461Z",
   "source": "MCP tools/list (read-only)",
   "tools": [
     {
@@ -11113,6 +11113,21 @@
       "inputSchema": {
         "type": "object",
         "properties": {},
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bongee_auto_setup",
+      "description": "Automatically prepare this session executor. If ready=false run the returned one-time command in the session native terminal, then check again. No manual ZIP or token input.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "retry": {
+            "type": "boolean",
+            "description": "Request a fresh installation only after the previous terminal attempt failed."
+          }
+        },
         "required": [],
         "additionalProperties": false
       }

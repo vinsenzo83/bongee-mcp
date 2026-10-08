@@ -1,6 +1,6 @@
 # 전체 기능 상세 매뉴얼
 
-카탈로그 수집: 2026-10-07T13:45:13.211Z. 전체 **424개**: Ruflo 원본 **358개**, Bongee 15개, BATON 45개, 원격 관리 6개. 원본 이름·입력 스키마 대조: 누락 0개, 변경 0개.
+카탈로그 수집: 2026-10-08T08:16:06.461Z. 전체 **425개**: Ruflo 원본 **358개**, Bongee 16개, BATON 45개, 원격 관리 6개. 원본 이름·입력 스키마 대조: 누락 0개, 변경 0개.
 
 [설치·기본 사용](USAGE.md) · [작업 순서 예제](WORKFLOWS.md) · [하단 상태 표시](STATUS-DISPLAY.md) · [전체 JSON 스키마](tool-catalog.json) · [대조 근거](catalog-parity.json)
 
@@ -51,7 +51,7 @@
 | 사업 Pod 검증·백엔드 선택 | 2 | [business](reference/business.md) |
 | HTTP 요청 | 1 | [http](reference/http.md) |
 | 미션 계획·행동 요청 | 5 | [mission](reference/mission.md) |
-| Bongee 로그인 세션 실행 | 15 | [bongee](reference/bongee.md) |
+| Bongee 로그인 세션 실행 | 16 | [bongee](reference/bongee.md) |
 | BATON 암호화 인계·팀·계정 | 39 | [baton](reference/baton.md) |
 | BATON 검증 계획·신호 | 6 | [spider](reference/spider.md) |
 | 원격 실행기 관리 | 6 | [remote](reference/remote.md) |
@@ -482,3 +482,4 @@
 - [bongee_remote_agent_result](reference/remote.md#bongee_remote_agent_result)
 - [bongee_remote_agent_cancel](reference/remote.md#bongee_remote_agent_cancel)
 - [bongee_remote_agent_list](reference/remote.md#bongee_remote_agent_list)
+- [bongee_auto_setup](reference/bongee.md#bongee_auto_setup)

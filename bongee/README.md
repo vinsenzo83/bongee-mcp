@@ -27,7 +27,7 @@ claude mcp add --scope user bongee -- node /absolute/path/bongee-mcp/bongee/prox
 
 **자동 개발:** `bongee_pipeline_start` 한 번으로 기획·설계·개발·실제 검증, 실패 후 수정과 재검증을 실행합니다. [자동 개발 상세 설명서](docs/AUTO-PIPELINE.md)를 보세요.
 
-상세 실행 순서는 [사용 설명서](docs/USAGE.md)와 [작업별 예제](docs/WORKFLOWS.md)를 보세요. **원본 358개를 포함한 전체 424개 도구의 개별 설명·모든 입력 스키마·호출 예시**는 [상세 기능 매뉴얼](docs/MANUAL.md)에 있습니다. 원본 이름·입력 스키마 대조 결과 누락 0개·변경 0개입니다. 기능별 실제 실행 검증 범위와는 구분합니다.
+상세 실행 순서는 [사용 설명서](docs/USAGE.md)와 [작업별 예제](docs/WORKFLOWS.md)를 보세요. **원본 358개를 포함한 전체 425개 도구의 개별 설명·모든 입력 스키마·호출 예시**는 [상세 기능 매뉴얼](docs/MANUAL.md)에 있습니다. 원본 이름·입력 스키마 대조 결과 누락 0개·변경 0개입니다. 기능별 실제 실행 검증 범위와는 구분합니다.
 
 ### 세션 하단 역할별 상태
 

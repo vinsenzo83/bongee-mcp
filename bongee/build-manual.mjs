@@ -27,6 +27,7 @@ function example(s,key='value'){
 function conditions(t){
  const s=JSON.stringify(t.inputSchema),d=t.description||'',g=group(t);
  const notes=[];
+ if(t.name==='bongee_auto_setup')return 'MCP 주소로 연결한 Codex·Claude 세션이 호출합니다. ready=false이면 반환된 일회용 command를 세션의 터미널로 자동 실행하고 다시 확인합니다. 사용자가 ZIP 다운로드·토큰 입력·명령 실행을 할 필요가 없습니다. 호스트의 터미널 실행 승인 정책과 Node.js 20 이상·본인 CLI 로그인은 필요합니다. ready=true 확인 전 설치 완료로 표시하지 않습니다.';
  if(g==='bongee'&&t.name!=='bongee_baton_status')notes.push(t.name==='bongee_agent_start'?'Codex 또는 Claude CLI 설치와 기존 로그인이 필요합니다.':'로컬 실행 기록/프로세스를 읽습니다. 조회 자체에는 AI API 키나 모델 호출이 필요하지 않습니다. provider_status는 CLI 설치·로그인 상태를 확인합니다.');
  if(g==='remote')notes.push('게이트웨이 연결 권한이 필요합니다. 실제 실행·로컬 도구 전달에는 켜진 실행기가 필요하며, agent_start에는 해당 CLI의 기존 로그인이 필요합니다. 상태 조회 자체는 모델을 호출하지 않습니다.');
  if(g==='baton'||g==='spider'||t.name==='bongee_baton_status')notes.push('BATON 서버 네트워크 연결. 계정 권한은 아래 실제 스키마의 api_key 등 필수 여부를 따릅니다. 익명 연결 성공은 모든 관리 기능의 사용 권한을 뜻하지 않습니다.');
@@ -43,7 +44,7 @@ function conditions(t){
 }
 const groups=new Map();for(const t of tools){const g=group(t);if(!groups.has(g))groups.set(g,[]);groups.get(g).push(t);}
 await mkdir(new URL('reference/',base),{recursive:true});
-let index='# 전체 기능 상세 매뉴얼\n\n'+`카탈로그 수집: ${capturedAt}. 전체 **${tools.length}개**: Ruflo 원본 **${parity.originalCount}개**, Bongee 15개, BATON 45개, 원격 관리 6개. 원본 이름·입력 스키마 대조: 누락 ${parity.missing.length}개, 변경 ${parity.changedInputSchemas.length}개.\n\n`;
+let index='# 전체 기능 상세 매뉴얼\n\n'+`카탈로그 수집: ${capturedAt}. 전체 **${tools.length}개**: Ruflo 원본 **${parity.originalCount}개**, Bongee ${tools.filter(t=>t.name.startsWith('bongee_')&&!t.name.startsWith('bongee_remote_')).length}개, BATON 45개, 원격 관리 6개. 원본 이름·입력 스키마 대조: 누락 ${parity.missing.length}개, 변경 ${parity.changedInputSchemas.length}개.\n\n`;
 index+='[설치·기본 사용](USAGE.md) · [작업 순서 예제](WORKFLOWS.md) · [하단 상태 표시](STATUS-DISPLAY.md) · [전체 JSON 스키마](tool-catalog.json) · [대조 근거](catalog-parity.json)\n\n각 항목에 실제 도구 설명, 모든 입력 필드(중첩 포함), 전체 JSON 스키마, 필수 입력 호출 틀, 연결 조건을 수록했습니다. 원본 영어 설명은 의미를 보존하기 위해 그대로 병기합니다. 예시는 문서용 자리표시자이며 실제 실행 결과나 검증 성공을 뜻하지 않습니다. enum/범위/분기 조건은 전체 스키마가 최종 기준입니다.\n\n응답은 MCP content 배열과 선택적 isError로 받습니다. 도구별 출력 스키마가 제공되지 않은 경우 출력 형태를 추정하지 않습니다. 작업 ID 등은 실제 앞 단계의 응답에서 가져옵니다.\n\n원본 이름·입력의 동등성 검사는 전체 동작 동등성 검사가 아닙니다. 외부 서비스·선택적 패키지·계정 조건은 유지됩니다. 모델 호출의 세션 대체 차이는 agent_execute 항목에 명시합니다.\n\n| 분류 | 개수 | 상세 설명 |\n|---|---:|---|\n';
 let documented=[];
 for(const [g,entries] of groups){
