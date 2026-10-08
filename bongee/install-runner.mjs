@@ -22,7 +22,7 @@ export async function installConnection(configPath,{home=homedir(),report=messag
  const config=await readConnection(configPath),base=join(home,'.local/share/bongee'),versionDir=join(base,config.releaseTag),configDir=join(home,'.config/bongee/connections'),logsDir=join(home,'.local/state/bongee');
  for(const dir of [base,configDir,logsDir]){await mkdir(dir,{recursive:true,mode:0o700});await chmod(dir,0o700);}
  const logPath=join(logsDir,'install-'+randomUUID()+'.log');await writeFile(logPath,'',{mode:0o600,flag:'wx'});
- let installed=false;try{installed=(await stat(join(versionDir,'.bongee-installed'))).isFile();}catch{}
+ let installed=false;try{const marker=join(versionDir,'.bongee-installed');installed=(await stat(marker)).isFile()&&/^[0-9a-f]{64}\n$/.test(await readFile(marker,'utf8'))&&(await stat(join(versionDir,'bongee/start-runner.mjs'))).isFile();}catch{}
  if(!installed){report('Bongee 공개 소스를 다운로드하고 검증합니다.');const temp=await mkdtemp(join(base,'.install-'));try{
   const name=`bongee-mcp-${config.releaseTag}.zip`,release=`https://github.com/vinsenzo83/bongee-mcp/releases/download/${config.releaseTag}`,archive=join(temp,name),sums=join(temp,`SHA256SUMS-${config.releaseTag}.txt`);
   const actual=await download(release+'/'+name,archive,256*1024*1024);await download(release+`/SHA256SUMS-${config.releaseTag}.txt`,sums,65536);const records=(await readFile(sums,'utf8')).split(/\r?\n/).map(line=>line.match(/^([0-9a-f]{64})\s+\*?([^\r\n]+)$/i)).filter(Boolean);const expected=records.find(record=>record[2]===name)?.[1];if(!expected||actual!==expected.toLowerCase())throw Error('Bongee release checksum verification failed');
