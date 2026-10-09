@@ -8,6 +8,9 @@ function supervise(){const args=process.argv.slice(2),separator=args.indexOf('--
  const watchdog=setInterval(()=>{if(processIdentity(owner)!==identity)killGroup();},250);
  // Remain alive after group TERM so the owner can escalate even if provider ignores it.
  process.on('SIGTERM',()=>{});process.on('SIGINT',()=>{});
- let spawnFailed=false;const child=spawn(command[0],command.slice(1),{env:process.env,shell:false,detached:false,stdio:['pipe','inherit','inherit']});process.stdin.pipe(child.stdin);child.stdin.on('error',()=>{});child.on('error',()=>{spawnFailed=true;clearInterval(watchdog);process.exitCode=127;});child.on('close',(code,signal)=>{clearInterval(watchdog);process.stdin.unpipe(child.stdin);process.stdin.destroy();process.exitCode=spawnFailed?127:Number.isInteger(code)&&code>=0?code:signal?128:1;});
+ // Do not inherit the supervisor's libuv nonblocking output descriptors.
+ // Rust CLI println! can panic on EAGAIN when a large tool result fills them.
+ // Dedicated child pipes plus stream backpressure preserve blocking child output.
+ let spawnFailed=false;const child=spawn(command[0],command.slice(1),{env:process.env,shell:false,detached:false,stdio:['pipe','pipe','pipe']});process.stdin.pipe(child.stdin);child.stdout.pipe(process.stdout,{end:false});child.stderr.pipe(process.stderr,{end:false});child.stdin.on('error',()=>{});child.on('error',()=>{spawnFailed=true;clearInterval(watchdog);process.exitCode=127;});child.on('close',(code,signal)=>{clearInterval(watchdog);process.stdin.unpipe(child.stdin);process.stdin.destroy();process.exitCode=spawnFailed?127:Number.isInteger(code)&&code>=0?code:signal?128:1;});
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)supervise();

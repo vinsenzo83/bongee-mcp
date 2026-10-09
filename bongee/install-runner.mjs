@@ -10,7 +10,7 @@ export function validateConnection(config){
  let url;try{url=new URL(config.url);}catch{throw Error('Invalid connection URL');}
  if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||!/^\/?$/.test(url.pathname))throw Error('Connection must use an HTTPS server URL');
  if(typeof config.token!=='string'||!/^bgr_[A-Za-z0-9_-]{43}$/.test(config.token)||typeof config.principal!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(config.principal))throw Error('Invalid private runner connection');
- const releaseTag=config.releaseTag||'v0.3.0';if(!/^v\d+\.\d+\.\d+$/.test(releaseTag)||releaseTag.length>32)throw Error('Invalid release version');
+ const releaseTag=config.releaseTag||'v0.3.2';if(!/^v\d+\.\d+\.\d+$/.test(releaseTag)||releaseTag.length>32)throw Error('Invalid release version');
  return {url:url.origin,token:config.token,principal:config.principal,releaseTag};
 }
 export async function readConnection(path){const s=await stat(path);if(!s.isFile()||s.size>4096)throw Error('Invalid connection file');return validateConnection(JSON.parse(await readFile(path,'utf8')));}
