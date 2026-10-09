@@ -1,5 +1,6 @@
 # bongee 사용 설명서
 
+[본인·팀 협업과 공동 진행판 사용법](SESSION-COLLABORATION.md) — 같은 PC 자동 연결과 BATON 초대방을 구분해 안내합니다.
 설치·등록은 [README](../README.md)를 따릅니다. [전체 도구 상세 매뉴얼](MANUAL.md)과 [작업별 실행 순서](WORKFLOWS.md)도 함께 제공됩니다. 등록 후 Codex 또는 Claude를 재시작하거나 새 대화를 열고 `bongee 연결 상태와 로그인 상태를 확인해`라고 요청합니다. 모델 실행에는 해당 CLI의 기존 로그인이 필요합니다.
 
 ## 세션 실행 도구 전체

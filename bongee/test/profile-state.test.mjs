@@ -4,6 +4,18 @@ import {spawnSync} from 'node:child_process';
 import {mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
+import {GatewayRunner} from '../runner.mjs';
+
+test('remote credentials stay isolated unless an explicit shared local root is selected',()=>{
+ const make=(token,extra={})=>new GatewayRunner({url:'https://example.test',token,manager:{},...extra});
+ const a=make('fixture-a'),b=make('fixture-b');
+ assert.notEqual(a.sessionLinkRoot,b.sessionLinkRoot);
+ assert.equal(a.sessionLinkRoot,make('fixture-a').sessionLinkRoot);
+ assert.equal(a.sessionLinkRoot.includes('fixture-a'),false);
+ const root=join(tmpdir(),'explicit-owned-session-group');
+ assert.equal(make('fixture-a',{sessionLinkRoot:root}).sessionLinkRoot,make('fixture-b',{sessionLinkRoot:root}).sessionLinkRoot);
+ assert.throws(()=>make('fixture-a',{sessionLinkRoot:'relative'}),/absolute/);
+});
 
 test('runner profile namespace is shared by manager monitor and pipeline, and excludes API secrets',async t=>{
  const dir=await mkdtemp(join(tmpdir(),'bongee-profile-'));t.after(()=>rm(dir,{recursive:true,force:true}));

@@ -9,7 +9,7 @@ import {processIdentity,waitForSupervisor} from './session-supervisor.mjs';
 import {validateLabels,phaseFor} from './monitor-state.mjs';
 
 export function safeEnv(source=process.env){
- const keys=['HOME','PATH','TMPDIR','USER','LANG','LC_ALL','SHELL','CODEX_HOME','XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME','BONGEE_SESSION_STATE_DIR'];
+ const keys=['HOME','PATH','TMPDIR','USER','LANG','LC_ALL','SHELL','CODEX_HOME','XDG_CONFIG_HOME','XDG_DATA_HOME','XDG_CACHE_HOME','BONGEE_SESSION_STATE_DIR','BONGEE_SESSION_LINK_ROOT'];
  return Object.fromEntries(keys.filter(k=>typeof source[k]==='string').map(k=>[k,source[k]]));
 }
 export function ownerIsAlive(pid){if(!Number.isInteger(pid)||pid<=0)return false;try{process.kill(pid,0);return true;}catch(error){return error.code==='EPERM';}}

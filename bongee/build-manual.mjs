@@ -28,6 +28,7 @@ function conditions(t){
  const s=JSON.stringify(t.inputSchema),d=t.description||'',g=group(t);
  const notes=[];
  if(t.name==='bongee_auto_setup')return 'MCP 주소로 연결한 Codex·Claude 세션이 호출합니다. ready=false이면 반환된 일회용 command를 세션의 터미널로 자동 실행하고 다시 확인합니다. 사용자가 ZIP 다운로드·토큰 입력·명령 실행을 할 필요가 없습니다. 호스트의 터미널 실행 승인 정책과 Node.js 20 이상·본인 CLI 로그인은 필요합니다. ready=true 확인 전 설치 완료로 표시하지 않습니다.';
+ if(t.name.startsWith('bongee_session_'))return '같은 PC·같은 OS 사용자에서 실행 중인 v0.4.0 이상 봉이 프록시가 필요합니다. 연결은 대화 탭이 아닌 프록시 단위입니다. 공유한 메시지와 작업 보고만 저장하며, 보고 상태는 독립 검증 결과가 아닙니다. 다른 PC·타인은 BATON 초대를 사용합니다. 자세한 사용법은 SESSION-COLLABORATION.md를 참고하세요.';
  if(g==='bongee'&&t.name!=='bongee_baton_status')notes.push(t.name==='bongee_agent_start'?'Codex 또는 Claude CLI 설치와 기존 로그인이 필요합니다.':'로컬 실행 기록/프로세스를 읽습니다. 조회 자체에는 AI API 키나 모델 호출이 필요하지 않습니다. provider_status는 CLI 설치·로그인 상태를 확인합니다.');
  if(g==='remote')notes.push('게이트웨이 연결 권한이 필요합니다. 실제 실행·로컬 도구 전달에는 켜진 실행기가 필요하며, agent_start에는 해당 CLI의 기존 로그인이 필요합니다. 상태 조회 자체는 모델을 호출하지 않습니다.');
  if(g==='baton'||g==='spider'||t.name==='bongee_baton_status')notes.push('BATON 서버 네트워크 연결. 계정 권한은 아래 실제 스키마의 api_key 등 필수 여부를 따릅니다. 익명 연결 성공은 모든 관리 기능의 사용 권한을 뜻하지 않습니다.');

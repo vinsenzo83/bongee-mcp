@@ -1,3 +1,6 @@
+import {createHash} from 'node:crypto';
+import {homedir} from 'node:os';
+import {join,isAbsolute} from 'node:path';
 import {AgentManager,safeEnv} from './core.mjs';
 import {pathToFileURL} from 'node:url';
 import {fileURLToPath} from 'node:url';
@@ -5,8 +8,8 @@ import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
 
 export class GatewayRunner{
- constructor({url=process.env.BONGEE_GATEWAY_URL,token=process.env.BONGEE_GATEWAY_TOKEN,manager=new AgentManager(),toolClient=null}={}){if(!url||!token)throw Error('Gateway URL and connection token required');const parsed=new URL(url);if(parsed.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(parsed.hostname))throw Error('Gateway requires HTTPS');this.url=url.replace(/\/$/,'');this.token=token;this.manager=manager;this.toolClient=toolClient;this.jobs=new Map();this.rpcJobs=new Map();this.stopped=false;}
- async connectTools(){if(this.toolClient)return;const client=new Client({name:'bongee-runner',version:'0.1.0'});const transport=new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('./proxy-server.mjs',import.meta.url))],env:safeEnv(),stderr:'ignore'});await client.connect(transport);this.toolClient=client;}
+ constructor({url=process.env.BONGEE_GATEWAY_URL,token=process.env.BONGEE_GATEWAY_TOKEN,manager=new AgentManager(),toolClient=null,sessionLinkRoot=process.env.BONGEE_SESSION_LINK_ROOT}={}){if(!url||!token)throw Error('Gateway URL and connection token required');const parsed=new URL(url);if(parsed.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(parsed.hostname))throw Error('Gateway requires HTTPS');this.url=url.replace(/\/$/,'');this.token=token;if(sessionLinkRoot!==undefined&&!isAbsolute(sessionLinkRoot))throw Error('Session link root must be absolute');this.sessionLinkRoot=sessionLinkRoot||join(homedir(),'.local/share/bongee/remote-session-link',createHash('sha256').update(this.url+'\n'+token).digest('hex'));this.manager=manager;this.toolClient=toolClient;this.jobs=new Map();this.rpcJobs=new Map();this.stopped=false;}
+ async connectTools(){if(this.toolClient)return;const client=new Client({name:'bongee-runner',version:'0.1.0'});const transport=new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('./proxy-server.mjs',import.meta.url))],env:{...safeEnv(),BONGEE_SESSION_LINK_ROOT:this.sessionLinkRoot},stderr:'ignore'});await client.connect(transport);this.toolClient=client;}
  async request(path,body){const response=await fetch(this.url+path,{method:body===undefined?'GET':'POST',headers:{Authorization:'Bearer '+this.token,'Content-Type':'application/json'},...(body!==undefined?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('Gateway request failed');return response.json();}
  // Tick and completion callbacks share one control/report request per job.
  // Keep the result until acknowledged, so transient failures never rerun tools.

@@ -1,5 +1,6 @@
 # BATON integration
 
+[본인·팀 협업과 공동 진행판 사용법](SESSION-COLLABORATION.md) — 같은 PC 자동 연결과 BATON 초대방을 구분해 안내합니다.
 `baton-adapter.mjs` connects Bongee to the user's BATON server using the MCP SDK's Streamable HTTP transport. The default endpoint is `https://baton-mcp-production.up.railway.app/mcp`. This adds BATON's actual discovered tools; it does not impersonate IPFS or a Nostr relay.
 
 ## Configuration and usage
