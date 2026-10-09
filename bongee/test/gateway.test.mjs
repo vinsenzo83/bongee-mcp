@@ -79,3 +79,31 @@ test('lost HTTP report acknowledgement retries without rerunning the tool or lea
  assert.equal(runner.rpcJobs.size,1);assert.equal(calls,1);
  await runner.tick();assert.equal(runner.rpcJobs.size,0);assert.equal(calls,1);
 });
+
+test('startup failures retain lease and retry reporting without restarting work',async()=>{
+ for(const kind of ['rpc','agent']){
+  let claimed=false,attempts=0,starts=0;const reports=[];
+  const manager={ready:Promise.resolve(),running:new Map(),providerStatus:async()=>[],start:async()=>{starts++;throw Error('private startup failure');},shutdown:async()=>{}};
+  const runner=new GatewayRunner({url:'http://127.0.0.1',token,manager});
+  runner.request=async(path,body)=>{
+   if(path==='/runner/heartbeat')return {ok:true};
+   if(path==='/runner/claim'){if(claimed)return {job:null};claimed=true;return {job:{id:'startup',kind,lease:'startup-lease',input:{}}};}
+   if(path==='/runner/control/startup')return {cancelRequested:false};
+   if(path==='/runner/report/startup'){reports.push(body);if(++attempts===1)throw Error('lost report');return {ok:true};}
+   throw Error('unexpected path');
+  };
+  await runner.tick().catch(()=>{});await runner.tick();
+  assert.equal(reports.length,2,kind+' failure must retry');assert.equal(reports[1].lease,'startup-lease');
+  assert.equal(reports[1].status,'failed');assert.equal(starts,kind==='agent'?1:0);
+  assert.equal(JSON.stringify(reports).includes('private startup failure'),false);
+ }
+});
+
+test('idle heartbeats omit unchanged catalog and reannounce after loss or interval',async()=>{
+ const bodies=[];let missing=false;
+ const runner=new GatewayRunner({url:'http://127.0.0.1',token,manager:{ready:Promise.resolve(),running:new Map(),providerStatus:async()=>[],shutdown:async()=>{}},toolClient:{listTools:async()=>({tools:[{name:'fixture_status',inputSchema:{type:'object'}}]})}});
+ runner.request=async(path,body)=>{if(path==='/runner/heartbeat'){bodies.push(body);return {ok:true,needsCatalog:missing};}if(path==='/runner/claim')return {job:null};throw Error('unexpected');};
+ await runner.tick();await runner.tick();assert.ok(bodies[0].catalog);assert.equal(bodies[1].catalog,undefined);
+ missing=true;await runner.tick();missing=false;await runner.tick();assert.ok(bodies[3].catalog);
+ runner.catalogSentAt=Date.now()-30001;await runner.tick();assert.ok(bodies[4].catalog);
+});

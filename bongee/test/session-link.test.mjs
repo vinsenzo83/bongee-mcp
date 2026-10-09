@@ -74,7 +74,8 @@ test('symlink root, state and lock are rejected without touching target', async 
   await fs.unlink(path.join(f.root, 'state.json'));
   await fs.rename(path.join(f.root, 'saved.json'), path.join(f.root, 'state.json'));
   await fs.symlink(target, path.join(f.root, 'state.lock'));
-  await assert.rejects(call(a, 'peers'));
+  await assert.rejects(call(a, 'connect'));
+  assert.ok(await call(a, 'peers')); // Read-only snapshots never touch the write lock.
   await fs.unlink(path.join(f.root, 'state.lock'));
   assert.equal(await fs.readFile(target, 'utf8'), 'untouched');
 });
@@ -139,7 +140,8 @@ test('unsafe existing files fail closed and abandoned owner lock is never stolen
   await fs.chmod(path.join(f.root, 'state.json'), 0o600);
   const owner = JSON.stringify({ pid: 2147483647, createdAt: 1 });
   await fs.writeFile(path.join(f.root, 'state.lock'), owner, { mode: 0o600 });
-  await assert.rejects(call(a, 'peers'), /lock busy/);
+  await assert.rejects(call(a, 'connect'), /lock busy/);
+  assert.ok(await call(a, 'board')); // A crashed writer must not prevent reading committed reports.
   assert.equal(await fs.readFile(path.join(f.root, 'state.lock'), 'utf8'), owner);
   await fs.unlink(path.join(f.root, 'state.lock'));
 });
@@ -164,4 +166,14 @@ test('board pagination preserves stable report identities and global counts', as
   assert.equal((await call(a, 'board', { offset: 100 })).reports.length, 0);
   for (const args of [{ offset: -1 }, { offset: '0' }, { limit: 0 }, { limit: 51 }]) await assert.rejects(call(a, 'board', args));
   assert.match((await call(a, 'connect')).capabilities.retention, /No TTL/);
+});
+
+test('read-only snapshots never rewrite state and remain consistent during concurrent writes',async t=>{
+ const f=await fixture(t),a=await f.create(),b=await f.create();
+ const before=await fs.readFile(path.join(f.root,'state.json'),'utf8');
+ await Promise.all(['peers','inbox','board'].map(name=>call(a,name)));
+ assert.equal(await fs.readFile(path.join(f.root,'state.json'),'utf8'),before);
+ const updates=Array.from({length:20},(_,i)=>call(b,'report',{taskId:'t'+i,title:'Task',status:'running',summary:'Synthetic'}));
+ const reads=Array.from({length:20},()=>call(a,'board').then(board=>assert.equal(board.total,board.counts.running)));
+ await Promise.all([...updates,...reads]);assert.equal((await call(a,'board')).total,20);
 });

@@ -14,7 +14,7 @@ test('two real MCP proxies discover each other and aggregate explicit work witho
   for(const name of ['claude-fixture','codex-fixture']){
    const c=new Client({name,version:'1.0.0'});clients.push(c);
    const t=new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('../proxy-server.mjs',import.meta.url))],env:{...process.env,BONGEE_SESSION_STATE_DIR:join(root,name),BONGEE_SESSION_LINK_ROOT:join(root,'shared'),BONGEE_BATON_URL:'http://127.0.0.1:1/mcp'},stderr:'pipe'});
-   t.stderr?.on('data',()=>{});await c.connect(t);assert.equal(c.getServerVersion().version,'0.4.0');
+   t.stderr?.on('data',()=>{});await c.connect(t);assert.equal(c.getServerVersion().version,'0.4.1');
   }
   const [a,b]=clients;
   const names=(await a.listTools()).tools.map(t=>t.name);
