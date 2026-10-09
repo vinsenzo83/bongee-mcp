@@ -4,6 +4,7 @@ import {join,isAbsolute} from 'node:path';
 import {AgentManager,safeEnv} from './core.mjs';
 import {pathToFileURL} from 'node:url';
 import {fileURLToPath} from 'node:url';
+import {recordConnection} from './connection-status.mjs';
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
 
@@ -36,6 +37,7 @@ export class GatewayRunner{
   else if(Date.now()-this.providersFetchedAt>30000&&!this.providerRefresh){this.providerRefresh=this.manager.providerStatus().then(p=>{this.cachedProviders=p;this.providersFetchedAt=Date.now();}).catch(()=>{}).finally(()=>{this.providerRefresh=null;});}
   if(this.toolClient&&!this.cachedCatalog)this.cachedCatalog=(await this.toolClient.listTools()).tools;
   const providers=this.cachedProviders,catalog=this.cachedCatalog;const sendCatalog=!!catalog&&(!this.catalogSentAt||Date.now()-this.catalogSentAt>=30000);const heartbeat=await this.request('/runner/heartbeat',{providers,...(sendCatalog?{catalog}:{})});if(sendCatalog)this.catalogSentAt=Date.now();if(heartbeat.needsCatalog)this.catalogSentAt=0;
+  if(this.manager.stateDir)await recordConnection(this.manager.stateDir,{connected:true}).catch(()=>{});
   for(const [id,entry] of this.failedJobs){try{await this.syncFailure(id,entry);}catch{}}
   for(const [id,entry] of this.rpcJobs){try{await this.syncRpc(id,entry);}catch{}}
   for(const [id,entry] of this.jobs){try{const control=await this.request('/runner/control/'+id);if(control.cancelRequested)await this.manager.cancel(entry.localId);const result=this.manager.result(entry.localId);await this.request('/runner/report/'+id,{...result,lease:entry.lease});if(result.status!=='running')this.jobs.delete(id);}catch{}}
@@ -44,6 +46,6 @@ export class GatewayRunner{
   try{const local=await this.manager.start(job.input);this.jobs.set(job.id,{localId:local.id,lease:job.lease});}catch{await this.failStart(job,'Local provider could not start; check login and working directory.');}
  }
  async run(){try{await this.connectTools();}catch{process.stderr.write('Full local tool catalog unavailable; session tools remain enabled.\n');}while(!this.stopped){try{await this.tick();}catch{process.stderr.write('Gateway connection unavailable; retrying.\n');}await new Promise(r=>setTimeout(r,2000));}}
- async stop(){this.stopped=true;for(const entry of this.rpcJobs.values())entry.controller.abort();await this.manager.shutdown();await this.toolClient?.close();}
+ async stop(){this.stopped=true;if(this.manager.stateDir)await recordConnection(this.manager.stateDir,{connected:false}).catch(()=>{});for(const entry of this.rpcJobs.values())entry.controller.abort();await this.manager.shutdown();await this.toolClient?.close();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const runner=new GatewayRunner();const stop=async()=>{await runner.stop();process.exit(0);};process.on('SIGINT',stop);process.on('SIGTERM',stop);await runner.run();}

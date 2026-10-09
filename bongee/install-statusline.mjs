@@ -6,10 +6,13 @@ const args=process.argv.slice(2),dir=join(homedir(),'.claude'),file=join(dir,'se
 const quote=s=>"'"+s.replaceAll("'","'\\''")+"'";
 await mkdir(dir,{recursive:true,mode:0o700});let config={};try{config=JSON.parse(await readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw Error('Cannot read existing Claude settings; no changes made');}
 const script=fileURLToPath(new URL('./statusline.mjs',import.meta.url));
-if(args.includes('--uninstall')){let old;try{old=JSON.parse(await readFile(backup,'utf8'));}catch{throw Error('No Bongee statusline backup found');}if(!config.statusLine?.command?.includes(script))throw Error('Status line changed since installation; no settings overwritten');if(old.statusLine===undefined)delete config.statusLine;else config.statusLine=old.statusLine;}
+const managed=typeof config.statusLine?.command==='string'&&config.statusLine.command.includes('statusline.mjs')&&config.statusLine.command.includes(previous);
+if(args.includes('--uninstall')){let old;try{old=JSON.parse(await readFile(backup,'utf8'));}catch{throw Error('No Bongee statusline backup found');}if(!managed)throw Error('Status line changed since installation; no settings overwritten');if(old.statusLine===undefined)delete config.statusLine;else config.statusLine=old.statusLine;}
 else if(!config.statusLine?.command?.includes(script)){
+ if(!managed){
  await writeFile(backup,JSON.stringify({statusLine:config.statusLine},null,2)+'\n',{mode:0o600});
  await writeFile(previous,JSON.stringify({command:config.statusLine?.command||''})+'\n',{mode:0o600});
+ }
  config.statusLine={type:'command',command:quote(process.execPath)+' '+quote(script)+' --previous-config '+quote(previous),padding:config.statusLine?.padding||0,refreshInterval:2};
 }
 const temp=file+'.bongee.tmp';await writeFile(temp,JSON.stringify(config,null,2)+'\n',{mode:0o600});await rename(temp,file);
