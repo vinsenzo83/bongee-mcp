@@ -12,3 +12,14 @@
 로컬 PC·390px 모바일에서 홈페이지 버전·431개 카탈로그·6개 신규 도구·협업 앵커·가로 넘침 없음 확인. 타인 팀방은 기존 BATON 도구 사용 안내이며 이번 버전에서 외부 방 생성·전송은 실행하지 않았습니다. 홈페이지는 안내이고 실제 작업 현황 조회는 AI 세션의 MCP 도구에서 합니다.
 
 완료 상태와 근거는 작성자 보고이며 독립 검증 결과가 아닙니다. 연결은 프록시 프로세스 단위이며 채팅 탭 자동 식별·앱 깨우기·과거 대화 수집을 하지 않습니다.
+
+## 배포 확인
+
+- 공개 릴리스: https://github.com/vinsenzo83/bongee-mcp/releases/tag/v0.4.0
+- 릴리스 소스: f717735bf815ff22e8a3efd4cdf9e532df9cd77a.
+- ZIP SHA256: da960730adccfc85cf5070fcfbee7aca1a7423b0ebece1278e7e05c257c9b349 (GitHub 자산 digest와 일치).
+- Railway 배포 cfe6c154-328b-422f-ad15-9baca8cc6e28 SUCCESS.
+- 공개 MCP initialize 버전 0.4.0, tools/list 431개, 신규 세션 도구 6개 확인.
+- 본인 실행기 2개를 v0.4.0으로 업데이트하고 명시적 본인 공유 범위를 지정. 설치본 MCP로 available peers 2개와 진행판 조회 확인. 아직 작업 보고 0건이며 검증 중 메시지·보고를 생성하지 않음.
+- 기존 원격 MCP 연결 ready=true 및 system_status healthy 실제 응답 확인.
+- 공개 홈페이지 PC 1440px·모바일 390px에서 버전·협업 안내·431개 도구·신규 6개·가로 넘침 없음 확인.
